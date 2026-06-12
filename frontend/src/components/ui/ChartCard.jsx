@@ -7,7 +7,11 @@ import { cn } from '../../lib/cn';
 export default function ChartCard({ title, subtitle, loading = false, empty = false, className = '', children, index = 0 }) {
   return (
     <motion.div
-      className={cn('flex flex-col overflow-hidden rounded-xl border border-border bg-card p-4 shadow-soft sm:p-5', className)}
+      className={cn(
+        'flex flex-col overflow-hidden rounded-xl border border-border bg-card p-4 shadow-soft sm:p-5',
+        'transition-shadow duration-300 hover:shadow-pop',
+        className,
+      )}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.3, ease: 'easeOut' }}

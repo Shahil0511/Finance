@@ -85,6 +85,7 @@ function SalesCharts({ data, loading, theme }) {
   const byBrand = data?.byBrand ?? [];
   const byPayment = data?.byPayment ?? [];
   const byState = data?.byState ?? [];
+  const byCategory = data?.byCategory ?? [];
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-3">
@@ -115,15 +116,33 @@ function SalesCharts({ data, loading, theme }) {
         <Donut data={byChannel} dataKey="revenue" formatter={formatCurrency} />
       </ChartCard>
 
-      <ChartCard title="Top Brands" subtitle="By revenue" loading={loading} empty={!byBrand.length} index={2}>
-        <HBars data={byBrand.slice(0, 8)} dataKey="revenue" color="#8b5cf6" formatter={formatCurrency} theme={theme} />
+      <ChartCard title="Units & SLA Breaches" subtitle="Dispatched units vs SLA misses per day" loading={loading} empty={!daily.length} className="lg:col-span-2" index={2}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={daily} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke={theme.grid} />
+            <XAxis dataKey="day" tick={theme.tick} tickFormatter={dayTick} axisLine={false} tickLine={false} />
+            <YAxis yAxisId="units" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={48} />
+            <YAxis yAxisId="sla" orientation="right" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={40} />
+            <Tooltip content={<ChartTip labelFormatter={dayTick} />} formatter={(v, n) => [formatNumber(v), n]} />
+            <Bar yAxisId="units" dataKey="units" name="Units" fill="#06b6d4" radius={[6, 6, 0, 0]} maxBarSize={26} />
+            <Line yAxisId="sla" type="monotone" dataKey="slaBreached" name="SLA Breached" stroke="#f43f5e" strokeWidth={2} dot={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
       </ChartCard>
 
       <ChartCard title="Payment Mix" subtitle="Prepaid vs COD revenue" loading={loading} empty={!byPayment.length} index={3}>
         <Donut data={byPayment} dataKey="revenue" formatter={formatCurrency} />
       </ChartCard>
 
-      <ChartCard title="Top States" subtitle="By revenue" loading={loading} empty={!byState.length} index={4}>
+      <ChartCard title="Top Brands" subtitle="By revenue" loading={loading} empty={!byBrand.length} index={4}>
+        <HBars data={byBrand.slice(0, 8)} dataKey="revenue" color="#8b5cf6" formatter={formatCurrency} theme={theme} />
+      </ChartCard>
+
+      <ChartCard title="Category Share" subtitle="Revenue by category" loading={loading} empty={!byCategory.length} index={5}>
+        <Donut data={byCategory} dataKey="revenue" formatter={formatCurrency} />
+      </ChartCard>
+
+      <ChartCard title="Top States" subtitle="By revenue" loading={loading} empty={!byState.length} index={6}>
         <HBars data={byState.slice(0, 8)} dataKey="revenue" color="#10b981" formatter={formatCurrency} theme={theme} />
       </ChartCard>
     </div>
@@ -159,11 +178,26 @@ function ReturnsCharts({ data, loading, theme }) {
         <Donut data={byChannel} dataKey="returns" />
       </ChartCard>
 
-      <ChartCard title="Return Status" subtitle="Count by status" loading={loading} empty={!byStatus.length} index={2} className="lg:col-span-2">
+      <ChartCard title="Return Status" subtitle="Count by status" loading={loading} empty={!byStatus.length} index={2}>
         <HBars data={byStatus.slice(0, 8)} dataKey="returns" color="#06b6d4" theme={theme} />
       </ChartCard>
 
-      <ChartCard title="Most Returned Brands" subtitle="By return count" loading={loading} empty={!byBrand.length} index={3}>
+      <ChartCard title="Avg Value per Return" subtitle="Daily forward value ÷ returns" loading={loading} empty={!daily.length} index={3}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart
+            data={daily.map((d) => ({ ...d, avg: d.returns ? d.value / d.returns : 0 }))}
+            margin={{ left: 0, right: 8, top: 8, bottom: 0 }}
+          >
+            <CartesianGrid vertical={false} stroke={theme.grid} />
+            <XAxis dataKey="day" tick={theme.tick} tickFormatter={dayTick} axisLine={false} tickLine={false} />
+            <YAxis tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={48} />
+            <Tooltip content={<ChartTip labelFormatter={dayTick} />} formatter={(v) => [formatCurrency(v), 'Avg value']} />
+            <Line type="monotone" dataKey="avg" name="Avg value" stroke="#10b981" strokeWidth={2} dot={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Most Returned Brands" subtitle="By return count" loading={loading} empty={!byBrand.length} index={4}>
         <HBars data={byBrand.slice(0, 8)} dataKey="returns" color="#f59e0b" theme={theme} />
       </ChartCard>
     </div>

@@ -5,7 +5,7 @@ import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import ErrorCard from '../ui/ErrorCard';
 import { Skeleton } from '../ui/Skeleton';
-import { DownloadWindowNotice, FilterInput, FilterSearch, FilterSelect } from '../ui/FilterControls';
+import { DownloadWindowNotice, FilterDate, FilterSearch, FilterSelect } from '../ui/FilterControls';
 
 /** Config-driven, collapsible filter panel — one component for every report.
     Edits stay local in a draft until "Apply" commits them to the store.     */
@@ -74,8 +74,8 @@ export default function FiltersPanel({ report }) {
             <DownloadWindowNotice />
 
             <div className="grid grid-cols-1 gap-3 px-4 py-4 sm:grid-cols-2 sm:gap-4 sm:px-5 lg:grid-cols-3 xl:grid-cols-4">
-              <FilterInput label={report.filters.dateLabel} type="date" value={draft.dateFrom} onChange={patch('dateFrom')} />
-              <FilterInput label="To" type="date" value={draft.dateTo} onChange={patch('dateTo')} />
+              <FilterDate label={report.filters.dateLabel} value={draft.dateFrom} onChange={patch('dateFrom')} />
+              <FilterDate label="To" value={draft.dateTo} onChange={patch('dateTo')} />
 
               {isLoading
                 ? report.filters.selects.map((s) => (

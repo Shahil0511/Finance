@@ -103,7 +103,9 @@ if (!TEST_DATABASE_URL) {
     assert.deepEqual(shaped.byPayment.map((p) => [p.key, p.revenue]), [["PREPAID", 400], ["COD", 200]]);
     assert.deepEqual(shaped.byBrand.map((b) => [b.key, b.revenue]), [["BrandA", 400], ["BrandB", 200]]);
     assert.deepEqual(shaped.byState.map((s) => [s.key, s.revenue]), [["DL", 400], ["MH", 200]]);
-    assert.ok(rows.length >= 7); // raw grouping rows: 1 day + 1 channel + 2 brands + 2 payments + 2 states
+    // Category comes from the OSD join; CO3 has no OSD match → excluded.
+    assert.deepEqual(shaped.byCategory.map((c) => [c.key, c.revenue]), [["Apparel", 300], ["Footwear", 200]]);
+    assert.ok(rows.length >= 9); // 1 day + 1 channel + 2 brands + 2 payments + 2 states + 2 categories
   });
 
   test("filters: distinct option lists are populated", async () => {

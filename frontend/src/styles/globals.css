@@ -37,8 +37,8 @@
 
   --ring:                   hsl(221 83% 53%);
 
-  /* Sidebar is dark in BOTH themes — the classic dashboard contrast. */
-  --sidebar:                hsl(224 47% 8%);
+  /* Sidebar is dark and IDENTICAL in both themes (brand anchor). */
+  --sidebar:                hsl(224 47% 7%);
   --sidebar-foreground:     hsl(215 20% 78%);
   --sidebar-muted:          hsl(217 14% 52%);
   --sidebar-accent:         hsl(222 34% 14%);
@@ -75,11 +75,12 @@
 
   --ring:                   hsl(217 91% 60%);
 
-  --sidebar:                hsl(225 50% 3.5%);
-  --sidebar-foreground:     hsl(215 20% 80%);
-  --sidebar-muted:          hsl(217 14% 50%);
-  --sidebar-accent:         hsl(222 32% 11%);
-  --sidebar-border:         hsl(222 30% 12%);
+  /* Same sidebar values as light mode — one consistent brand anchor. */
+  --sidebar:                hsl(224 47% 7%);
+  --sidebar-foreground:     hsl(215 20% 78%);
+  --sidebar-muted:          hsl(217 14% 52%);
+  --sidebar-accent:         hsl(222 34% 14%);
+  --sidebar-border:         hsl(222 30% 15%);
 }
 
 /* Map tokens into Tailwind utility namespaces (bg-*, text-*, border-*, …). */
@@ -128,6 +129,13 @@
   body {
     @apply bg-background text-foreground antialiased;
     text-rendering: optimizeLegibility;
+    /* Subtle premium tint falling from the top of the page. */
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--primary) 5%, transparent),
+      transparent 360px
+    );
+    background-repeat: no-repeat;
   }
 
   ::selection {
@@ -153,4 +161,35 @@
     }
   }
 }
+
+/* ── react-day-picker themed via design tokens ───────────────────────────── */
+.rdp-root {
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: color-mix(in oklab, var(--primary) 12%, transparent);
+  --rdp-today-color: var(--primary);
+  --rdp-day-width: 36px;
+  --rdp-day-height: 36px;
+  --rdp-day_button-width: 36px;
+  --rdp-day_button-height: 36px;
+  --rdp-day_button-border-radius: 10px;
+  --rdp-outside-opacity: 0.35;
+  --rdp-disabled-opacity: 0.3;
+  --rdp-font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--card-foreground);
+}
+.rdp-day_button { transition: background-color 150ms ease, color 150ms ease, transform 120ms ease; }
+.rdp-day_button:hover:not([disabled]) { background: var(--accent); }
+.rdp-day_button:active:not([disabled]) { transform: scale(0.94); }
+.rdp-selected .rdp-day_button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  box-shadow: 0 4px 12px -2px color-mix(in oklab, var(--primary) 50%, transparent);
+}
+.rdp-caption_label { font-weight: 600; font-size: 0.8125rem; }
+.rdp-button_previous, .rdp-button_next { border-radius: 10px; transition: background-color 150ms ease; }
+.rdp-button_previous:hover, .rdp-button_next:hover { background: var(--accent); }
+.rdp-chevron { fill: var(--muted-foreground); }
+.rdp-weekday { color: var(--muted-foreground); font-size: 0.6875rem; font-weight: 600; }
 

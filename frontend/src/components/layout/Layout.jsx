@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import { Toaster } from 'sonner';
 import { DesktopSidebar, MobileSidebar } from './Sidebar';
 import Topbar from './Topbar';
-import ToastContainer from '../ui/Toast';
+import { useThemeStore } from '../../store/useThemeStore';
 
 /** Dashboard shell: fixed dark sidebar (drawer on mobile) + topbar + content. */
 export default function Layout({ title, children }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const theme = useThemeStore((s) => s.theme);
 
   return (
     <div className="min-h-screen bg-background">
@@ -26,7 +28,13 @@ export default function Layout({ title, children }) {
         </main>
       </div>
 
-      <ToastContainer />
+      <Toaster
+        theme={theme}
+        position="bottom-right"
+        richColors
+        closeButton
+        toastOptions={{ style: { fontFamily: 'inherit' } }}
+      />
     </div>
   );
 }

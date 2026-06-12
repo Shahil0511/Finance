@@ -85,11 +85,11 @@ export default function DataTable({
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto overscroll-x-contain">
+      {/* Table — contained scroll on both axes with a sticky header. */}
+      <div className="max-h-[70vh] overflow-auto overscroll-contain">
         <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="bg-muted/50">
+          <thead className="sticky top-0 z-10 [box-shadow:0_1px_0_var(--border)]">
+            <tr className="bg-muted">
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -126,12 +126,12 @@ export default function DataTable({
               data.map((row, i) => (
                 <tr
                   key={rowKey ? rowKey(row, i) : i}
-                  className="transition-colors hover:bg-accent/50"
+                  className="transition-colors duration-150 hover:bg-accent/60"
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className="max-w-56 truncate whitespace-nowrap px-3 py-2.5 text-[13px] text-foreground/90 first:pl-4 last:pr-4 sm:first:pl-5 sm:last:pr-5"
+                      className="max-w-56 truncate whitespace-nowrap px-3 py-2.5 text-[13px] text-foreground/90 first:pl-4 first:font-medium first:text-foreground last:pr-4 sm:first:pl-5 sm:last:pr-5"
                     >
                       {col.render ? col.render(row[col.key], row) : (row[col.key] ?? '—')}
                     </td>
