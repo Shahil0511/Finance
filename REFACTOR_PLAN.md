@@ -112,12 +112,12 @@ A reporting tool that miscounts money is worse than one that's down.
 > **Guiding rule** for a finance tool with zero tests: *don't refactor behavior you can't verify.*
 > Lock outputs first, fix correctness second, restructure third.
 
-### Phase 0 — Safety net (before touching report logic) — 🟡 IN PROGRESS
+### Phase 0 — Safety net (before touching report logic) — ✅ COMPLETE 2026-06-12
 - [x] Unit tests (`node:test`, zero deps) for the pure logic: `pagination`, `csv`, `dateRange`, `reportQueryValidator` — **24 tests** via `npm test`. Includes characterization tests pinning bugs A5 + B3, and security tests for the sort allow-list.
 - [x] DB-backed integration harness: `docker-compose.test.yml` (ephemeral Postgres) + `backend/test/integration/{schema.sql, seed.sales.sql}` + `npm run test:integration`. Sales list/summary/export/filters covered (**5 tests**), including one that reproduces bug **A3 live** (revenue 350 vs correct 600). `npm test` self-skips integration when `TEST_DATABASE_URL` is unset, so it never touches a real DB. (`postgres.js` gained `end()` so the pool closes cleanly — also needed for the Phase 2 graceful-shutdown fix.)
-- [ ] Extend integration coverage to **Returns / Myntra-Omni / TataCliq** — where bugs A1 (list vs summary) and A2 (omni over-count) live; they need their own seed + tests before the Phase 2 fixes.
-- [ ] Wire **ESLint** (incl. `react-hooks/exhaustive-deps`) + an unused-export check to surface dead code mechanically.
-- [ ] Add `engines` (Node 20) to both `package.json`; add CI running install + build + tests.
+- [x] Integration coverage extended to **Returns / Myntra-Omni / TataCliq** (seeds + tests reproduced A1/A2 before fixing) and a **server E2E smoke test** that boots the real app over HTTP. **22 integration tests** total.
+- [x] **ESLint** flat configs on both sides (backend node rules; frontend `react-hooks` + `jsx-uses-vars`); both lint clean. Frontend **node:test** suite added (13 tests: formatters, exportQuery, cleanParams, filter stores).
+- [x] `engines >=20` in both `package.json`; `.github/workflows/ci.yml` runs backend lint+unit+integration (postgres service) and frontend lint+test+build.
 
 ### Phase 1 — Delete dead weight & fix docs (zero behavior change) — ✅ DONE 2026-06-12
 - [x] Deleted `loadbalancer.js`, `backend/db/mssql.js`, `frontend/src/utils/api.js`, `frontend/src/hooks/useDebounce.js`, the 3 orphan components, `tailwind.config.js`, and `postcss.config.js`.
@@ -136,9 +136,10 @@ A reporting tool that miscounts money is worse than one that's down.
 - [x] **B2:** all 6 CSV exports now stream via a pg cursor (`pg-query-stream` + `csvStream.js`) — bounded memory, proper 500s on query errors, socket abort on mid-stream failure. Verified by integration tests.
 - [x] **B4/B5/B6:** 5xx error detail hidden in prod (unit-tested); `trust proxy` configurable via `TRUST_PROXY`; CORS default locked to `false`. (`passOnStoreError` left fail-open by design. **B1** dropped — auth handled upstream.)
 - [x] Lifecycle: shutdown now drains the pg pool (`closePool`/`pool.end()`) with a 10s force-exit guard.
-- [ ] Lifecycle (remaining): move per-request `mkdirSync` out of the logging hot path; honor `testConnection()`'s result at startup.
+- [x] Lifecycle (remaining): `mkdirSync` memoized out of the logging hot path (append errors now logged); startup honors `testConnection()` with a loud warning; `/health` probes Postgres (2s cap) and reports `db: ok|unavailable`; unmatched `/api` paths get a JSON 404 (no more SPA fallthrough); errorHandler registered last.
+- [x] **Found & fixed during E2E:** a Redis outage at boot hung server startup **forever** (`reconnectStrategy` never gave up, so the awaited `connect()` never settled). Initial connect now fails fast after 3 attempts → app boots cache-less; post-boot outages still retry patiently. `db/redis.js`.
 - [x] Frontend: `AbortController` + timeout on all 6 CSV exports (shared `downloadCsv`; sagas abort on `takeLatest` cancel).
-- [ ] Frontend (remaining): real row keys; fix `split_remakrs`, the `opacity:1` typo, label `htmlFor`/`id`, keyboard/aria on sort + pagination.
+- [x] Frontend (remaining): stable `rowKey`s on all 5 tables; `split_remakrs`→`split_remarks` renamed in SQL + UI (guarded by TataCliq integration tests); `opacity:1` typo fixed; labels associated via `useId` `htmlFor`/`id` (shared `ui/FilterControls.jsx`); sort headers are keyboard-reachable buttons with `aria-sort`; pagination buttons labeled; Next driven by `hasMore`. Stale-date defaults (M1) fixed via the filter-store factory — `reset()` recomputes the business window.
 
 ### Phase 3 — Backend structural refactor
 - [ ] Introduce a **report-module factory** parameterized by `{ baseCte, whereSql, exportCols, allowedSortCols, filenamePrefix }` emitting the controller+service+repository trio; extract a shared `B2C_PROJECTION` SQL fragment (kills the 5× paste) and a shared `exportHandler(res, result, prefix)` (kills the 6× block).
@@ -146,7 +147,8 @@ A reporting tool that miscounts money is worse than one that's down.
 
 ### Phase 4 — Frontend structural refactor
 - [ ] Collapse the 5 stacks into **config-driven components** + a per-marketplace registry: one `<SummaryCards>`, one `<FiltersPanel>` (hoist `FilterSelect`/`FilterInput`/`DownloadWindowNotice` into `ui/`), one `<MarketplaceTable>`, one `<ReportPage>` shell driven by a routes array.
-- [ ] Replace the 5 Zustand stores with a `createFilterStore(defaults)` factory; unify both export paths behind one `useCsvExport` hook. (The shared `downloadCsv` helper from Phase 2 is the building block; the saga-vs-`useState` split remains.)
+- [x] ~~Replace the 5 Zustand stores with a factory~~ **DONE 2026-06-12** — `createFilterStore(makeDefaults)` collapsed the 5 stores; defaults computed at call time (fixes M1). `FilterSelect`/`FilterInput`/`DownloadWindowNotice` hoisted into `ui/FilterControls.jsx` (removed from all 5 panels).
+- [ ] Unify both export paths behind one `useCsvExport` hook (the shared `downloadCsv` helper exists; the saga-vs-`useState` split remains).
 
 ### Phase 5 — DB performance (DBA-owned; already scoped in PERFORMANCE_NOTES.md)
 - [ ] Pursue index/materialized-view recommendations for the heavy report joins; move large exports to an async job flow. Track separately — needs DBA access, not app changes.
