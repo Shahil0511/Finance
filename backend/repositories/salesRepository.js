@@ -43,7 +43,7 @@ const ALLOWED_SORT_COLS = new Set([
   "ordered_quantity",
   "split_mrp",
   "split_unit_sale_price",
-  "split_remakrs",
+  "split_remarks",
 ]);
 
 const B2C_CTES = `
@@ -304,7 +304,7 @@ sp1 AS (
             WHEN unis > 1
             THEN 'DUPLICATE_DUE_TO_AVAILABLE_MULTIPLE_CHANNEL_SUB_ORDER_ID'
             ELSE 'Ok'
-        END AS split_remakrs
+        END AS split_remarks
     FROM (
         SELECT
             channel_sub_order_id,
@@ -341,7 +341,7 @@ SELECT
     sp1.unit_sale_price AS split_unit_sale_price,
     sp1.uni,
     sp1.unis,
-    sp1.split_remakrs
+    sp1.split_remarks
 FROM final
 LEFT JOIN sp1
     ON final.channel_parent_order_id = sp1.channel_parent_order_id
@@ -372,7 +372,7 @@ const TATA_CLIQ_EXPORT_COLS = [
   ["split_unit_sale_price", "split_unit_sale_price"],
   ["uni", "uni"],
   ["unis", "unis"],
-  ["split_remakrs", "split_remakrs"],
+  ["split_remarks", "split_remarks"],
 ];
 
 async function list(params, { sortBy, sortDir, pageLimit, offset, signal }) {

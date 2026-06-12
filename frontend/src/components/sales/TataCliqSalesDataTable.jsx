@@ -33,7 +33,7 @@ const COLUMNS = [
   { key: 'order_status', header: 'Status', sortable: true, render: (v) => v ? <Badge variant={getStatusVariant(v)}>{v}</Badge> : '-' },
   { key: 'final_resolution', header: 'Resolution', sortable: true },
   { key: 'state', header: 'State', sortable: true },
-  { key: 'split_remakrs', header: 'Split Remarks', sortable: true },
+  { key: 'split_remarks', header: 'Split Remarks', sortable: true },
   { key: 'sla_breached', header: 'SLA Breached', sortable: true, render: (v) => <Badge variant={getSLAVariant(v)}>{['1','true','t','y','yes'].includes(String(v).toLowerCase()) ? 'Yes' : 'No'}</Badge> },
 ];
 
