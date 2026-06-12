@@ -10,76 +10,57 @@ const allowedStart = () => {
   return fmt(d);
 };
 
-const DEFAULT_SALES = {
-  dateFrom: allowedStart(), dateTo: today(),
+// Defaults are FUNCTIONS so dates are computed when used, not frozen at module
+// load — reset() after midnight/month rollover now picks up the current window.
+const dateDefaults = () => ({ dateFrom: allowedStart(), dateTo: today() });
+
+const salesDefaults = () => ({
+  ...dateDefaults(),
   salesChannel: '', category: '', orderStatus: '',
   warehouse: '', paymentType: '', state: '', brand: '', search: '',
   page: 1, pageSize: 50, sortBy: 'handover_time', sortDir: 'DESC',
-};
+});
 
-const DEFAULT_RETURNS = {
-  dateFrom: allowedStart(), dateTo: today(),
+const returnsDefaults = () => ({
+  ...dateDefaults(),
   salesChannel: '', returnStatus: '', qcStatus: '', search: '',
   page: 1, pageSize: 50, sortBy: 'return_order_processed_time', sortDir: 'DESC',
-};
+});
 
-const DEFAULT_MYNTRA_OMNI_RETURNS = {
-  dateFrom: allowedStart(), dateTo: today(),
+const myntraOmniReturnsDefaults = () => ({
+  ...dateDefaults(),
   returnStatus: '', qcStatus: '', search: '',
   page: 1, pageSize: 50, sortBy: 'return_order_processed_time', sortDir: 'DESC',
-};
+});
 
-const DEFAULT_TATA_CLIQ_SALES = {
-  dateFrom: allowedStart(), dateTo: today(),
+const tataCliqSalesDefaults = () => ({
+  ...dateDefaults(),
   orderStatus: '', warehouse: '', paymentType: '', state: '', brand: '', search: '',
   page: 1, pageSize: 50, sortBy: 'handover_time', sortDir: 'DESC',
-};
+});
 
-const DEFAULT_TATA_CLIQ_RETURNS = {
-  dateFrom: allowedStart(), dateTo: today(),
+const tataCliqReturnsDefaults = () => ({
+  ...dateDefaults(),
   returnStatus: '', qcStatus: '', search: '',
   page: 1, pageSize: 50, sortBy: 'return_order_processed_time', sortDir: 'DESC',
-};
+});
 
-export const useSalesFilterStore = create((set) => ({
-  filters:    { ...DEFAULT_SALES },
-  setFilters: (patch) => set((s) => ({ filters: { ...s.filters, ...patch, page: 1 } })),
-  setPage:    (page)  => set((s) => ({ filters: { ...s.filters, page } })),
-  setSort:    (sortBy, sortDir) => set((s) => ({ filters: { ...s.filters, sortBy, sortDir, page: 1 } })),
-  reset:      () => set({ filters: { ...DEFAULT_SALES } }),
-}));
+// One factory instead of five copy-pasted stores. API is unchanged:
+// { filters, setFilters, setPage, setSort, reset }.
+const createFilterStore = (makeDefaults) =>
+  create((set) => ({
+    filters:    makeDefaults(),
+    setFilters: (patch) => set((s) => ({ filters: { ...s.filters, ...patch, page: 1 } })),
+    setPage:    (page)  => set((s) => ({ filters: { ...s.filters, page } })),
+    setSort:    (sortBy, sortDir) => set((s) => ({ filters: { ...s.filters, sortBy, sortDir, page: 1 } })),
+    reset:      () => set({ filters: makeDefaults() }),
+  }));
 
-export const useReturnsFilterStore = create((set) => ({
-  filters:    { ...DEFAULT_RETURNS },
-  setFilters: (patch) => set((s) => ({ filters: { ...s.filters, ...patch, page: 1 } })),
-  setPage:    (page)  => set((s) => ({ filters: { ...s.filters, page } })),
-  setSort:    (sortBy, sortDir) => set((s) => ({ filters: { ...s.filters, sortBy, sortDir, page: 1 } })),
-  reset:      () => set({ filters: { ...DEFAULT_RETURNS } }),
-}));
-
-export const useMyntraOmniReturnsFilterStore = create((set) => ({
-  filters:    { ...DEFAULT_MYNTRA_OMNI_RETURNS },
-  setFilters: (patch) => set((s) => ({ filters: { ...s.filters, ...patch, page: 1 } })),
-  setPage:    (page)  => set((s) => ({ filters: { ...s.filters, page } })),
-  setSort:    (sortBy, sortDir) => set((s) => ({ filters: { ...s.filters, sortBy, sortDir, page: 1 } })),
-  reset:      () => set({ filters: { ...DEFAULT_MYNTRA_OMNI_RETURNS } }),
-}));
-
-export const useTataCliqSalesFilterStore = create((set) => ({
-  filters:    { ...DEFAULT_TATA_CLIQ_SALES },
-  setFilters: (patch) => set((s) => ({ filters: { ...s.filters, ...patch, page: 1 } })),
-  setPage:    (page)  => set((s) => ({ filters: { ...s.filters, page } })),
-  setSort:    (sortBy, sortDir) => set((s) => ({ filters: { ...s.filters, sortBy, sortDir, page: 1 } })),
-  reset:      () => set({ filters: { ...DEFAULT_TATA_CLIQ_SALES } }),
-}));
-
-export const useTataCliqReturnsFilterStore = create((set) => ({
-  filters:    { ...DEFAULT_TATA_CLIQ_RETURNS },
-  setFilters: (patch) => set((s) => ({ filters: { ...s.filters, ...patch, page: 1 } })),
-  setPage:    (page)  => set((s) => ({ filters: { ...s.filters, page } })),
-  setSort:    (sortBy, sortDir) => set((s) => ({ filters: { ...s.filters, sortBy, sortDir, page: 1 } })),
-  reset:      () => set({ filters: { ...DEFAULT_TATA_CLIQ_RETURNS } }),
-}));
+export const useSalesFilterStore             = createFilterStore(salesDefaults);
+export const useReturnsFilterStore           = createFilterStore(returnsDefaults);
+export const useMyntraOmniReturnsFilterStore = createFilterStore(myntraOmniReturnsDefaults);
+export const useTataCliqSalesFilterStore     = createFilterStore(tataCliqSalesDefaults);
+export const useTataCliqReturnsFilterStore   = createFilterStore(tataCliqReturnsDefaults);
 
 export const cleanParams = (obj) =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v != null && v !== ''));

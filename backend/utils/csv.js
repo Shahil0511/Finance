@@ -10,7 +10,7 @@ function formatCsvVal(v) {
   // Defuse CSV/spreadsheet formula injection: a leading = or @ (or +/- not
   // followed by a digit, or tab/CR) is executed as a formula by Excel/Sheets.
   // Prefix with ' so it stays text — without mangling numbers like "-5.00".
-  if (/^[=@\t\r]/.test(s) || /^[+\-](?!\d)/.test(s)) s = "'" + s;
+  if (/^[=@\t\r]/.test(s) || /^[+-](?!\d)/.test(s)) s = "'" + s;
   return s.replace(/"/g, '""');
 }
 

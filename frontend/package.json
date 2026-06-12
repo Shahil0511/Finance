@@ -2,10 +2,15 @@
   "name": "finance-tool-frontend",
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test \"test/*.test.js\"",
+    "lint": "eslint src test"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.2",
@@ -21,6 +26,10 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.6.0",
     "tailwindcss": "^4.3.0",
     "vite": "^5.0.0"
   }
