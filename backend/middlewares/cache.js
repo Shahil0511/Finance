@@ -25,45 +25,57 @@ const inFlight = new Map();
 
 function cacheMiddleware({ keyFn, ttl = 120 }) {
   return async (req, res, next) => {
-    if (req.method !== "GET" || req.headers["cache-control"] === "no-store") {
+    const cacheControl = String(req.headers["cache-control"] || "").toLowerCase();
+
+    if (req.method !== "GET" || cacheControl.includes("no-store")) {
       res.locals.dataSource = "db";
       res.locals.redisStatus = redis.available() ? "bypass" : "unavailable";
       return next();
     }
+
+    // `Cache-Control: no-cache` = forced refresh (the dashboard Refresh
+    // button): skip the cache READ so the database is queried fresh, but fall
+    // through to the res.json wrap below so the fresh payload OVERWRITES the
+    // cached entry — a true cache refresh for every user, not just this one.
+    const forceRefresh = cacheControl.includes("no-cache");
 
     const key = typeof keyFn === "function" ? keyFn(req) : keyFn;
     const safeTtl = Math.max(1, parseInt(ttl, 10) || 120);
     res.locals.cacheKey = key;
     res.locals.redisStatus = redis.available() ? "available" : "unavailable";
 
-    const cached = await getCache(key);
-    if (cached !== null) {
-      res.locals.dataSource = "redis";
-      res.locals.redisStatus = "hit";
-      res.setHeader("X-Cache", "HIT");
-      res.setHeader("X-Data-Source", "redis");
-      res.setHeader("Cache-Control", `private, max-age=${safeTtl}`);
-      res.setHeader("Vary", "Cookie");
-      return res.json(cached);
-    }
+    if (!forceRefresh) {
+      const cached = await getCache(key);
+      if (cached !== null) {
+        res.locals.dataSource = "redis";
+        res.locals.redisStatus = "hit";
+        res.setHeader("X-Cache", "HIT");
+        res.setHeader("X-Data-Source", "redis");
+        res.setHeader("Cache-Control", `private, max-age=${safeTtl}`);
+        res.setHeader("Vary", "Cookie");
+        return res.json(cached);
+      }
 
-    if (inFlight.has(key)) {
-      try {
-        const data = await inFlight.get(key);
-        res.locals.dataSource = "memory-dedup";
-        res.locals.redisStatus = "dedup";
-        res.setHeader("X-Cache", "DEDUP");
-        res.setHeader("X-Data-Source", "memory-dedup");
-        return res.json(data);
-      } catch {
-        // The original request was aborted or failed, so this request will query DB.
+      if (inFlight.has(key)) {
+        try {
+          const data = await inFlight.get(key);
+          res.locals.dataSource = "memory-dedup";
+          res.locals.redisStatus = "dedup";
+          res.setHeader("X-Cache", "DEDUP");
+          res.setHeader("X-Data-Source", "memory-dedup");
+          return res.json(data);
+        } catch {
+          // The original request was aborted or failed, so this request will query DB.
+        }
       }
     }
 
     res.locals.__cacheKey = key;
     res.locals.__cacheTtl = safeTtl;
     res.locals.dataSource = "db";
-    res.locals.redisStatus = redis.available() ? "miss" : "unavailable";
+    res.locals.redisStatus = redis.available()
+      ? (forceRefresh ? "refresh" : "miss")
+      : "unavailable";
 
     const origJson = res.json.bind(res);
     let settled = false;
@@ -90,7 +102,7 @@ function cacheMiddleware({ keyFn, ttl = 120 }) {
       }
 
       if (!res.headersSent) {
-        res.setHeader("X-Cache", "MISS");
+        res.setHeader("X-Cache", forceRefresh ? "REFRESH" : "MISS");
         res.setHeader("X-Data-Source", "db");
         res.setHeader("Cache-Control", `private, max-age=${safeTtl}`);
         res.setHeader("Vary", "Cookie");

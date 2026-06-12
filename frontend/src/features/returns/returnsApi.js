@@ -1,10 +1,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { apiUrl } from '../../config/apiBase';
+import { isForcedRefresh } from '../../lib/refreshBus';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: apiUrl('returns'),
   credentials: 'same-origin',
   timeout: 180000,
+  prepareHeaders: (headers) => {
+    // Dashboard Refresh: ask the backend to bypass + rewrite its Redis cache.
+    if (isForcedRefresh()) headers.set('cache-control', 'no-cache');
+    return headers;
+  },
 });
 
 export const returnsApi = createApi({
@@ -24,6 +30,7 @@ export const returnsApi = createApi({
     }),
     getReturnsFilters: b.query({
       query: () => '/filters',
+      providesTags: ['Returns'], // Refresh re-pulls dropdown options too
       keepUnusedDataFor: 300,
     }),
     getReturnsAnalytics: b.query({
@@ -43,6 +50,7 @@ export const returnsApi = createApi({
     }),
     getMyntraOmniReturnsFilters: b.query({
       query: () => '/omni/filters',
+      providesTags: ['Returns'],
       keepUnusedDataFor: 300,
     }),
     getTataCliqReturnsList: b.query({
@@ -57,6 +65,7 @@ export const returnsApi = createApi({
     }),
     getTataCliqReturnsFilters: b.query({
       query: () => '/tata-cliq/filters',
+      providesTags: ['Returns'],
       keepUnusedDataFor: 300,
     }),
   }),

@@ -21,6 +21,7 @@ if (!TEST_DATABASE_URL) {
   const PORT = 4571;
   const BASE = `http://127.0.0.1:${PORT}`;
   let child;
+  let redisUp = false; // set in before() from /health; cache tests skip without it
 
   const read = (f) => fs.readFileSync(path.join(__dirname, f), "utf8");
 
@@ -43,9 +44,11 @@ if (!TEST_DATABASE_URL) {
         DB_USER: decodeURIComponent(u.username),
         DB_PASSWORD: decodeURIComponent(u.password),
         DB_SSL: "false",
-        // Unroutable Redis with a short timeout -> app boots cache-less fast.
-        REDIS_URL: "redis://127.0.0.1:1",
-        REDIS_CONNECT_TIMEOUT_MS: "300",
+        // Real Redis when the harness provides one (docker-compose.test.yml /
+        // CI service); otherwise an unroutable port so the app boots
+        // cache-less fast and the cache test self-skips.
+        REDIS_URL: process.env.TEST_REDIS_URL || "redis://127.0.0.1:1",
+        REDIS_CONNECT_TIMEOUT_MS: "1000",
         NODE_ENV: "production",
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -66,6 +69,9 @@ if (!TEST_DATABASE_URL) {
         reject(new Error(`server exited before listening (code ${code})`)),
       );
     });
+
+    const health = await fetch(`${BASE}/health`).then((r) => r.json());
+    redisUp = health.redis?.status === "connected";
   });
 
   after(() => {
@@ -130,6 +136,27 @@ if (!TEST_DATABASE_URL) {
     assert.equal(Number(body.daily[0].revenue), 600);
     assert.equal(body.byChannel[0].key, "MYNTRA");
     assert.equal(body.byPayment.length, 2); // PREPAID + COD
+  });
+
+  test("Refresh (Cache-Control: no-cache) bypasses and REWRITES the Redis cache", async (t) => {
+    if (!redisUp) return t.skip("redis not available in this environment");
+    // Unique param -> unique cache key, isolated from the other tests.
+    const url = `${BASE}/api/sales/summary?dateFrom=2000-01-01&dateTo=2100-01-01&salesChannel=MYNTRA&_cb=refresh-test`;
+
+    const first = await fetch(url); // cold -> queries DB, fills cache
+    assert.equal(first.headers.get("x-cache"), "MISS");
+
+    const second = await fetch(url); // warm -> served from Redis
+    assert.equal(second.headers.get("x-cache"), "HIT");
+
+    // The dashboard Refresh button: skip the read, query fresh, overwrite.
+    const third = await fetch(url, { headers: { "cache-control": "no-cache" } });
+    assert.equal(third.headers.get("x-cache"), "REFRESH");
+    assert.equal(Number((await third.json()).total_sale_value), 600);
+
+    const fourth = await fetch(url); // the rewritten entry serves again
+    assert.equal(fourth.headers.get("x-cache"), "HIT");
+    assert.equal(Number((await fourth.json()).total_sale_value), 600);
   });
 
   test("invalid date param returns a 400 with the public message", async () => {

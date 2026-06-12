@@ -1,10 +1,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { apiUrl } from '../../config/apiBase';
+import { isForcedRefresh } from '../../lib/refreshBus';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: apiUrl('sales'),
   credentials: 'same-origin',
   timeout: 180000,
+  prepareHeaders: (headers) => {
+    // Dashboard Refresh: ask the backend to bypass + rewrite its Redis cache.
+    if (isForcedRefresh()) headers.set('cache-control', 'no-cache');
+    return headers;
+  },
 });
 
 export const salesApi = createApi({
@@ -24,6 +30,7 @@ export const salesApi = createApi({
     }),
     getSalesFilters: b.query({
       query: () => '/filters',
+      providesTags: ['Sales'], // Refresh re-pulls dropdown options too
       keepUnusedDataFor: 300,
     }),
     getSalesAnalytics: b.query({
@@ -43,6 +50,7 @@ export const salesApi = createApi({
     }),
     getTataCliqSalesFilters: b.query({
       query: () => '/tata-cliq/filters',
+      providesTags: ['Sales'],
       keepUnusedDataFor: 300,
     }),
   }),

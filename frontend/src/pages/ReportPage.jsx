@@ -9,6 +9,7 @@ import FiltersPanel from '../components/reports/FiltersPanel';
 import SummaryCards from '../components/reports/SummaryCards';
 import ReportTable from '../components/reports/ReportTable';
 import { cn } from '../lib/cn';
+import { markForcedRefresh } from '../lib/refreshBus';
 
 // recharts is heavy — split the charts section into its own lazy chunk so the
 // initial bundle stays lean and charts stream in after first paint.
@@ -35,6 +36,14 @@ const EYEBROWS = {
 export default function ReportPage({ report }) {
   const dispatch = useDispatch();
 
+  const handleRefresh = () => {
+    // Mark the refetch window so every request carries Cache-Control:
+    // no-cache — the backend skips its Redis read and overwrites the cached
+    // entry with fresh data. Then invalidate the RTK tags to refetch.
+    markForcedRefresh();
+    dispatch(report.invalidate());
+  };
+
   return (
     <Layout title={report.title}>
       <motion.div
@@ -53,7 +62,7 @@ export default function ReportPage({ report }) {
             </h1>
             <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{report.description}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => dispatch(report.invalidate())}>
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
             <RefreshCw className="size-3.5" aria-hidden="true" /> Refresh
           </Button>
         </div>
