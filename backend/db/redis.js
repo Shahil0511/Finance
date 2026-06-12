@@ -125,34 +125,6 @@ async function setCache(key, value, ttlSeconds = 120) {
   }
 }
 
-async function invalidateCache(pattern) {
-  if (!available()) return 0;
-  try {
-    const cachePattern = namespaced(pattern);
-    if (!cachePattern.includes("*")) {
-      return await client.del(cachePattern);
-    }
-
-    let deleted = 0;
-    for await (const key of client.scanIterator({
-      MATCH: cachePattern,
-      COUNT: 200,
-    })) {
-      await client.del(key);
-      deleted++;
-    }
-    console.log(`[Redis] Invalidated ${deleted} key(s) matching "${pattern}"`);
-    return deleted;
-  } catch (err) {
-    stats.errors++;
-    console.error(
-      `[Redis] invalidateCache error for "${pattern}":`,
-      err.message,
-    );
-    return 0;
-  }
-}
-
 function health() {
   const hitTotal = stats.hits + stats.misses;
   return {
@@ -185,7 +157,6 @@ module.exports = {
   getClient,
   getCache,
   setCache,
-  invalidateCache,
   health,
   namespaced,
 };

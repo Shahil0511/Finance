@@ -1,15 +1,20 @@
 # Sales & Returns Finance Tool
 ## Internal Web Tool — Finance Team Daily Reports
 
-A full-stack internal tool that connects directly to your PostgreSQL or MSSQL database and gives your finance team a self-serve daily dashboard for Sales and Returns reports — with filters, exports, and no dependency on you.
+A full-stack internal tool that serves the finance team self-serve daily dashboards for **Sales** and
+**Returns** across marketplaces (generic, Myntra-Omni, TataCliq) — with filters, server-side pagination,
+Redis-cached queries, and CSV export.
+
+> **Auth:** Authentication/authorization is handled by the **upstream system** (Data Nexus / session
+> cookies). This service has **no in-process auth** by design and is not meant to be exposed directly.
 
 ---
 
 ## Tech Stack
-- **Backend**: Node.js + Express
-- **Frontend**: React (single-page app)
-- **Database**: PostgreSQL AND/OR MSSQL (configurable per report)
-- **Export**: CSV, Excel-ready TSV copy
+- **Backend:** Node.js + Express, PostgreSQL (`pg`), Redis (`redis`) for caching + rate-limit store
+- **Frontend:** React 18 + Vite SPA — RTK Query + redux-saga (server data/exports) and Zustand (filters + theme), Tailwind v4, framer-motion
+- **Export:** CSV (hand-rolled in `backend/utils/csv.js`)
+- **Database:** PostgreSQL only
 
 ---
 
@@ -17,125 +22,88 @@ A full-stack internal tool that connects directly to your PostgreSQL or MSSQL da
 
 ```
 finance-tool/
+├── docker-compose.yml          # backend + redis; builds frontend; exposes :5555
+├── Dockerfile                  # 2-stage: build frontend → run backend
 ├── backend/
-│   ├── server.js              # Main Express server
-│   ├── .env                   # Your DB credentials (DO NOT commit)
-│   ├── db/
-│   │   ├── postgres.js        # PostgreSQL connection
-│   │   └── mssql.js           # MSSQL connection
-│   ├── routes/
-│   │   ├── sales.js           # Sales report API
-│   │   └── returns.js         # Returns report API
-│   └── middleware/
-│       └── auth.js            # Simple token auth
+│   ├── server.js               # Express app: serves API + built SPA
+│   ├── config/appConfig.js     # port, basePath, cache TTLs, pagination
+│   ├── db/                     # postgres.js, redis.js
+│   ├── routes/                 # sales.js, returns.js (thin → controllers)
+│   ├── controllers/            # request/response glue
+│   ├── services/               # business logic + execution timing
+│   ├── repositories/           # SQL (parameterized)
+│   ├── middlewares/            # cache, rateLimiter, requestLogger, errorHandler,
+│   │                           #   requestContext, requestSignal
+│   ├── validators/             # reportQueryValidator (sort allow-list, date/page)
+│   ├── utils/                  # csv, dateRange, pagination, httpErrors, fileLogger
+│   └── public/                 # built SPA (output of `npm run build` in /frontend)
 └── frontend/
-    ├── index.html
     └── src/
-        ├── App.jsx
-        ├── components/
-        │   ├── Filters.jsx
-        │   ├── DataTable.jsx
-        │   └── ExportBar.jsx
-        └── pages/
-            ├── SalesReport.jsx
-            └── ReturnsReport.jsx
+        ├── app/                # redux store + rootSaga
+        ├── features/           # sales/returns RTK Query APIs + export sagas, ui/notifications slices
+        ├── store/              # zustand: useFilterStore, useThemeStore
+        ├── components/         # shared/DataTable + per-marketplace tables/panels/cards, ui/, layout/
+        ├── pages/              # SalesReport, ReturnsReport, MyntraOmniReturnsReport, TataCliq{Sales,Returns}Report
+        └── config/apiBase.js   # same-origin API base
 ```
 
 ---
 
-## Setup Instructions
+## Setup
 
-### Step 1 — Install dependencies
-
-```bash
-# Backend
-cd backend
-npm install
-
-# Frontend (if using dev mode)
-cd ../frontend
-npm install
-```
-
-### Step 2 — Configure your database
-
-Edit `backend/.env`:
-
-```env
-# Choose which DB each report uses
-SALES_DB=postgres        # postgres | mssql
-RETURNS_DB=mssql         # postgres | mssql
-
-# PostgreSQL
-PG_HOST=localhost
-PG_PORT=5432
-PG_DATABASE=your_db_name
-PG_USER=your_user
-PG_PASSWORD=your_password
-
-# MSSQL (SSMS)
-MSSQL_HOST=localhost
-MSSQL_PORT=1433
-MSSQL_DATABASE=your_db_name
-MSSQL_USER=your_user
-MSSQL_PASSWORD=your_password
-MSSQL_ENCRYPT=false       # true if using Azure SQL
-
-# Auth token for finance team access
-API_SECRET=changeme_finance2024
-
-# Server port
-PORT=4000
-```
-
-### Step 3 — Configure your table/column names
-
-Edit `backend/routes/sales.js` and `backend/routes/returns.js`.
-Look for the `TABLE CONFIG` section at the top of each file and map your actual column names.
-
-### Step 4 — Run the backend
-
+### 1. Backend
 ```bash
 cd backend
-node server.js
-# Server starts at http://localhost:4000
+npm install
+cp .env.example .env        # then fill in DB_* and REDIS_URL
+npm run dev                 # nodemon, or: node server.js
 ```
+The API listens on `PORT` (default **4000**) and serves under the base path `VITE_BASE_PATH`
+(default `/finance-gst-tracker`). Health check: `GET /health`.
 
-### Step 5 — Serve the frontend
+**Required env** (see `backend/.env.example` for the full list): the app reads **`DB_*`** names
+(`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_SSL`) — *not* `PG_*`. Redis is
+configured via `REDIS_URL`. Redis is optional: if it's unreachable the app runs without cache.
 
-**Option A — Static build (recommended for production):**
+### 2. Frontend — dev mode
 ```bash
 cd frontend
-npm run build
-# Copy the dist/ folder to your web server (IIS, Nginx, Apache)
+npm install
+npm run dev                 # Vite dev server on :5173, proxies /api → http://127.0.0.1:4000
 ```
 
-**Option B — Dev mode:**
+### 3. Frontend — production build
 ```bash
 cd frontend
-npm run dev
-# Opens at http://localhost:5173
+npm run build               # Vite outputs to ../backend/public (NOT dist/)
 ```
+The backend then serves the built SPA and the API together. Start the backend and open
+`http://<host>:4000/finance-gst-tracker/`.
+
+### 4. Docker (recommended for deployment)
+```bash
+docker compose up --build
+```
+The Dockerfile builds the frontend (stage 1) and runs the backend (stage 2). Compose starts the app
+plus a Redis container and exposes the app on **:5555** (note: bare `node server.js` defaults to **4000**;
+Docker overrides `PORT=5555`). DB credentials come from an `.env` file referenced by compose.
 
 ---
 
 ## Finance Team Access
 
-Once deployed, share the internal URL (e.g., `http://192.168.1.100:4000`) with finance team.
-They can:
-- Filter by year, month, date range (2020 to today)
-- Filter by sales channel, region, status
-- Filter sales by **handover date**
-- Filter returns by **processed date**
-- Export any filtered view as CSV
-- Copy table directly into Excel
+Reports available: **Sales**, **Returns**, **Myntra-Omni Returns**, **TataCliq Sales**, **TataCliq Returns**.
+Each report supports:
+- Date-range filtering (Sales by handover date, Returns by processed date) with a current-month default window
+- Channel / status / QC / region filters (applied on **Apply Filters**)
+- Server-side pagination (`hasMore` strategy — avoids a full COUNT on every load)
+- CSV export of the filtered view
 
 ---
 
-## Customization Checklist
+## Notes / Known limitations
 
-- [ ] Update table/column names in `routes/sales.js` and `routes/returns.js`
-- [ ] Set correct DB credentials in `.env`
-- [ ] Add any extra columns your finance team needs
-- [ ] (Optional) Add Windows AD / SSO auth in `middleware/auth.js`
-- [ ] (Optional) Schedule auto-email of daily CSV using `node-cron`
+- See `PERFORMANCE_NOTES.md` for caching behavior and DBA index recommendations.
+- See `REFACTOR_PLAN.md` for the current audit findings and the staged refactor (correctness fixes,
+  duplication cleanup). Some report-correctness items there are open.
+- CSV exports are synchronous; very large exports hold the request open.
