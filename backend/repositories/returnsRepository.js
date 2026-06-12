@@ -606,7 +606,7 @@ const OMNI_RETURN_QUERY = `
     SELECT DISTINCT pincode, city, state FROM pincodes
   ),
   b2c AS (
-    SELECT
+    SELECT DISTINCT ON (sl.channel_order_id, sl.client_sku_id_ean)
       sl.warehouse_name AS wh_name,
       sl.channel_parent_order_id AS parent_order_id,
       sl.channel_order_id AS ch_order_id,
@@ -659,6 +659,7 @@ const OMNI_RETURN_QUERY = `
           ELSE sl.customer_billing_pin
         END
       ) = pin.pincode
+    ORDER BY sl.channel_order_id, sl.client_sku_id_ean, sl.handover_time DESC NULLS LAST
   )
   SELECT
     rt.*,

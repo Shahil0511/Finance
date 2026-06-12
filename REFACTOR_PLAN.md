@@ -33,7 +33,7 @@ A reporting tool that miscounts money is worse than one that's down.
 | # | Sev | Issue | Location |
 |---|-----|-------|----------|
 | A1 | **High** | **Returns list and summary count different populations.** Summary uses `RETURN_BASE_CTE` (previous-month grace `EXTRACT(DAY…)<=2`); list uses `RETURN_DETAIL_BASE_CTE` (no grace, different inclusion predicate + dedup key). On the 1st–2nd of a month the summary tiles include last month but the detail rows don't → **headline numbers won't reconcile with the table.** | `returnsRepository.js:27-35` vs `62-81` |
-| A2 | **High** | **Myntra-Omni returns over-count & duplicate.** A dedup rank `rw = ROW_NUMBER()…` is computed but **never applied** (no `WHERE rw=1`), and the omni `b2c` CTE lacks `DISTINCT ON`. The `LEFT JOIN` fans out duplicate rows → inflated `COUNT(*)` and `SUM(forward_order_value)`. | `returnsRepository.js:583-586, 608-610, 718-726` |
+| A2 | ✅ Fixed | **Myntra-Omni returns over-count & duplicate.** The omni `b2c` CTE lacked `DISTINCT ON`, so the `LEFT JOIN` fanned out duplicate rows → inflated `COUNT(*)` and `SUM(forward_order_value)`. **FIXED 2026-06-12** — added `DISTINCT ON (channel_order_id, client_sku_id_ean)` (mirroring the regular query); guarded by `returns.integration.test.js`. | `returnsRepository.js:608` |
 | A3 | **High** | **Sales revenue likely undercounts.** `total_sale_value` sums `unit_sale_price` with no `× dispatched_quantity`; same for `total_tax`. Any line with qty > 1 is wrong. (Confirm column semantics first.) | `salesRepository.js:395-396` |
 | A4 | Medium | **Valid-looking sort → HTTP 500.** One shared `ALLOWED_SORT_COLS` spans queries with different column sets, so e.g. `?sortBy=split_mrp` passes validation then throws `column does not exist`. | `salesRepository.js:5-47, 381-383` |
 | A5 | Medium | **Pagination `total`/`totalPages` are fake** — only ever report "current page (+1)" (`total = offset + data.length + (hasMore?1:0)`). Frontend Next button is gated on the fake `totalPages` and can block paging forward. | `pagination.js:29,37`; `shared/DataTable.jsx:168-172` |
@@ -129,7 +129,7 @@ A reporting tool that miscounts money is worse than one that's down.
 
 ### Phase 2 — Correctness & security fixes (behavior changes — guarded by Phase 0 tests)
 - [ ] **A1:** unify the returns list/summary base CTEs (same population + date window).
-- [ ] **A2:** apply `WHERE rw=1` + `DISTINCT ON` to the omni query.
+- [x] **A2:** added `DISTINCT ON (channel_order_id, client_sku_id_ean)` to the omni b2c CTE (2026-06-12) — omni summary/list no longer double-count via b2c fan-out. Verified by integration tests.
 - [ ] **A3:** fix sales revenue to `× dispatched_quantity` (after confirming column semantics); **A6:** add `::numeric` casts to sales sums.
 - [ ] **A4:** per-query sort allow-lists + a **repo-internal** `sortBy ∈ allowed` / `sortDir ∈ {ASC,DESC}` guard.
 - [ ] **B2/B3:** stream + bound CSV exports; prefix `= + - @` values with `'`.

@@ -65,21 +65,22 @@ if (!TEST_DATABASE_URL) {
     assert.equal(rows[0].return_order_item_id, "RA");
   });
 
-  // ─── CHARACTERIZATION of bug A2 (REFACTOR_PLAN.md) ─────────────────────────
-  // The omni b2c CTE has no DISTINCT ON, so a duplicate b2c row fans ROI1 into
-  // two rows. Correct = 2 returns / 800. Current (buggy) = 3 returns / 1300.
-  // Phase 2 fix: add DISTINCT ON to the omni b2c CTE (mirroring the regular query).
-  test("[characterizes bug A2] omni summary over-counts via b2c fan-out (3/1300, should be 2/800)", async () => {
+  // ─── A2 FIXED (REFACTOR_PLAN.md) ──────────────────────────────────────────
+  // The omni b2c CTE now has DISTINCT ON (channel_order_id, client_sku_id_ean),
+  // mirroring the regular return query, so a duplicate b2c row no longer fans a
+  // return into multiple rows. (These assertions were flipped from 3/1300 → 2/800
+  // when the fix landed; they now guard against the over-count regressing.)
+  test("[A2 fixed] omni summary dedups the b2c fan-out (2 returns / 800)", async () => {
     const [agg] = await returnsRepo.omniSummary(OMNI);
-    assert.equal(Number(agg.total_returns), 3); // BUG: should be 2
-    assert.equal(Number(agg.forward_order_value), 1300); // BUG: should be 800 (ROI1 counted twice)
+    assert.equal(Number(agg.total_returns), 2); // ROI1 + ROI2; ROI1 no longer doubled
+    assert.equal(Number(agg.forward_order_value), 800); // 500 + 300
   });
 
-  test("[characterizes bug A2] omni list returns the duplicated row (3, should be 2)", async () => {
+  test("[A2 fixed] omni list returns one row per return (2)", async () => {
     const rows = await returnsRepo.omniList(OMNI, SORT);
-    assert.equal(rows.length, 3); // BUG: ROI1 appears twice; should be 2
+    assert.equal(rows.length, 2); // ROI1, ROI2 — no duplicate
     const roi1 = rows.filter((r) => r.return_order_item_id === "ROI1");
-    assert.equal(roi1.length, 2); // the fan-out
+    assert.equal(roi1.length, 1); // fan-out collapsed
   });
 
   test("filters: distinct return channels include the seeded ones", async () => {
