@@ -21,6 +21,8 @@ export default function DataTable({
   isLoading, isFetching, isError, error, onRetry,
   executionTimeMs,
   emptyMessage = "No records match the selected filters.",
+  // Stable React key per row (e.g. an order/return id). Falls back to the index.
+  rowKey,
 }) {
   const {
     total = 0,
@@ -105,14 +107,22 @@ export default function DataTable({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  onClick={() => col.sortable && handleSort(col.key)}
-                  className={`px-3 py-2.5 text-left font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap select-none
-                    ${col.sortable ? 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200' : ''}`}
+                  scope="col"
+                  aria-sort={sortBy === col.key ? (sortDir === 'ASC' ? 'ascending' : 'descending') : undefined}
+                  className="px-3 py-2.5 text-left font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap select-none"
                 >
-                  <div className="flex items-center gap-1">
-                    {col.header}
-                    {col.sortable && <SortIcon active={sortBy === col.key} dir={sortDir} />}
-                  </div>
+                  {col.sortable ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSort(col.key)}
+                      className="flex items-center gap-1 font-semibold cursor-pointer hover:text-slate-700 dark:hover:text-slate-200"
+                    >
+                      {col.header}
+                      <SortIcon active={sortBy === col.key} dir={sortDir} />
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-1">{col.header}</div>
+                  )}
                 </th>
               ))}
             </tr>
@@ -127,7 +137,7 @@ export default function DataTable({
             ) : (
               data.map((row, i) => (
                 <tr
-                  key={i}
+                  key={rowKey ? rowKey(row, i) : i}
                   className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
                 >
                   {columns.map((col) => (
@@ -148,6 +158,7 @@ export default function DataTable({
           <select
             value={pageSize}
             onChange={(e) => onPageSize?.(Number(e.target.value))}
+            aria-label="Rows per page"
             className="input-base py-1 text-xs"
           >
             {[25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
@@ -161,13 +172,15 @@ export default function DataTable({
             <button
               onClick={() => onPage?.(page - 1)}
               disabled={page <= 1}
+              aria-label="Previous page"
               className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onPage?.(page + 1)}
-              disabled={page >= totalPages}
+              disabled={!(hasMore || page < totalPages)}
+              aria-label="Next page"
               className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight className="w-3.5 h-3.5" />

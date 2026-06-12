@@ -73,6 +73,7 @@ export default function TataCliqReturnsDataTable() {
       error={error}
       onRetry={refetch}
       executionTimeMs={res?.executionTimeMs}
+      rowKey={(r, i) => `${r.return_order_item_id ?? 'row'}-${r.sp1_channel_sub_order_id ?? ''}-${i}`}
     />
   );
 }

@@ -1,50 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, ChevronDown, X, Check, Info } from 'lucide-react';
+import { Filter, ChevronDown, X, Check } from 'lucide-react';
 import { useSalesFilterStore } from '../../store/useFilterStore';
 import { useGetSalesFiltersQuery } from '../../features/sales/salesApi';
 import ErrorCard from '../ui/ErrorCard';
 import { SkeletonBlock } from '../ui/Skeleton';
+import { FilterSelect, FilterInput, DownloadWindowNotice } from '../ui/FilterControls';
 
 const FILTER_KEYS = ['dateFrom','dateTo','salesChannel','category','orderStatus','warehouse','paymentType','state','brand','search'];
-
-function FilterSelect({ label, value, onChange, options = [], placeholder = 'All' }) {
-  return (
-    <div className="flex flex-col gap-1 min-w-35">
-      <label className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="input-base py-1.5">
-        <option value="">{placeholder}</option>
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
-      </select>
-    </div>
-  );
-}
-
-function FilterInput({ label, value, onChange, type = 'text', ...rest }) {
-  return (
-    <div className="flex flex-col gap-1 min-w-35">
-      <label className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="input-base py-1.5"
-        {...rest}
-      />
-    </div>
-  );
-}
-
-function DownloadWindowNotice() {
-  return (
-    <div className="mx-4 mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
-      <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300" />
-      <p>
-        Previous month downloads are available through the 2nd day of the current month. From the 3rd onward, downloads are limited to the current month.
-      </p>
-    </div>
-  );
-}
 
 export default function SalesFiltersPanel() {
   const { filters, setFilters, reset } = useSalesFilterStore();

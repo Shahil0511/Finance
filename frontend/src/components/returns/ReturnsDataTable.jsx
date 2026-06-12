@@ -126,6 +126,7 @@ export default function ReturnsDataTable() {
       error={error}
       onRetry={refetch}
       executionTimeMs={res?.executionTimeMs}
+      rowKey={(r, i) => r.return_order_item_id ?? i}
     />
   );
 }

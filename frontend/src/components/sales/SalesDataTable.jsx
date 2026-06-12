@@ -66,6 +66,7 @@ export default function SalesDataTable() {
       error={error}
       onRetry={refetch}
       executionTimeMs={res?.executionTimeMs}
+      rowKey={(r, i) => r.system_invoice_line_item_id ?? i}
     />
   );
 }

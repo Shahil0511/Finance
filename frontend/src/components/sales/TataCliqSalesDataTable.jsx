@@ -80,6 +80,7 @@ export default function TataCliqSalesDataTable() {
       error={error}
       onRetry={refetch}
       executionTimeMs={res?.executionTimeMs}
+      rowKey={(r, i) => `${r.system_invoice_line_item_id ?? 'row'}-${r.channel_sub_order_id ?? ''}-${i}`}
     />
   );
 }
