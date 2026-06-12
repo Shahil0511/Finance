@@ -1,5 +1,5 @@
 import { Sun, Moon } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useThemeStore } from '../../store/useThemeStore';
 
 export default function ThemeToggle() {
@@ -9,20 +9,23 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      aria-label="Toggle theme"
-      className="relative flex items-center w-12 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
-      style={{ backgroundColor: isDark ? '#3b82f6' : '#e2e8f0' }}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      className="inline-flex size-11 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:size-10"
     >
-      <motion.span
-        layout
-        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-        className="absolute flex items-center justify-center w-5 h-5 bg-white rounded-full shadow-sm"
-        style={{ left: isDark ? '26px' : '2px' }}
-      >
-        {isDark
-          ? <Moon className="w-3 h-3 text-brand-600" />
-          : <Sun  className="w-3 h-3 text-amber-500" />}
-      </motion.span>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={theme}
+          initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+          animate={{ rotate: 0, opacity: 1, scale: 1 }}
+          exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+          transition={{ duration: 0.2 }}
+          className="flex"
+        >
+          {isDark
+            ? <Moon className="size-[18px]" aria-hidden="true" />
+            : <Sun className="size-[18px] text-warning" aria-hidden="true" />}
+        </motion.span>
+      </AnimatePresence>
     </button>
   );
 }

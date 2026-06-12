@@ -1,21 +1,22 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Button from './Button';
 
 export default function ErrorCard({ message = 'Something went wrong', onRetry, compact = false }) {
   if (compact) {
     return (
-      <div className="card flex items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span className="text-sm">{message}</span>
+      <div
+        role="alert"
+        className="flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3"
+      >
+        <div className="flex min-w-0 items-center gap-2 text-destructive">
+          <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+          <span className="truncate text-sm">{message}</span>
         </div>
         {onRetry && (
-          <button
-            onClick={onRetry}
-            className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
-          >
-            <RefreshCw className="w-3 h-3" /> Retry
-          </button>
+          <Button variant="ghost" size="sm" onClick={onRetry} className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive">
+            <RefreshCw className="size-3.5" aria-hidden="true" /> Retry
+          </Button>
         )}
       </div>
     );
@@ -23,25 +24,24 @@ export default function ErrorCard({ message = 'Something went wrong', onRetry, c
 
   return (
     <motion.div
-      className="card flex flex-col items-center justify-center gap-4 py-16 text-center"
-      initial={{ opacity: 0, scale: 0.97 }}
+      role="alert"
+      className="flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card py-16 text-center shadow-soft"
+      initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.25 }}
     >
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30">
-        <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+      <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10" aria-hidden="true">
+        <AlertTriangle className="size-6 text-destructive" />
       </div>
-      <div>
-        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Failed to load data</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">{message}</p>
+      <div className="px-6">
+        <p className="text-sm font-semibold text-foreground">Failed to load data</p>
+        <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">{message}</p>
       </div>
       {onRetry && (
-        <button
-          onClick={onRetry}
-          className="btn-outline flex items-center gap-1.5 text-sm"
-        >
-          <RefreshCw className="w-4 h-4" />
+        <Button variant="outline" size="sm" onClick={onRetry}>
+          <RefreshCw className="size-4" aria-hidden="true" />
           Retry
-        </button>
+        </Button>
       )}
     </motion.div>
   );
