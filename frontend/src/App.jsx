@@ -1,24 +1,25 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useThemeStore }  from './store/useThemeStore';
-import SalesReport   from './pages/SalesReport';
-import ReturnsReport from './pages/ReturnsReport';
-import MyntraOmniReturnsReport from './pages/MyntraOmniReturnsReport';
-import TataCliqSalesReport from './pages/TataCliqSalesReport';
-import TataCliqReturnsReport from './pages/TataCliqReturnsReport';
+import { MotionConfig } from 'framer-motion';
+import { useThemeStore } from './store/useThemeStore';
+import { REPORTS } from './config/reports';
+import ReportPage from './pages/ReportPage';
 
 export default function App() {
   const initTheme = useThemeStore((s) => s.initTheme);
-  useEffect(() => { initTheme(); }, []);
+  useEffect(() => { initTheme(); }, [initTheme]);
 
   return (
-    <Routes>
-      <Route path="/sales" element={<SalesReport />} />
-      <Route path="/tata-cliq-sales" element={<TataCliqSalesReport />} />
-      <Route path="/returns" element={<ReturnsReport />} />
-      <Route path="/tata-cliq-return" element={<TataCliqReturnsReport />} />
-      <Route path="/myntra-omni-return" element={<MyntraOmniReturnsReport />} />
-      <Route path="*" element={<Navigate to="/sales" replace />} />
-    </Routes>
+    // reducedMotion="user" disables framer animations for prefers-reduced-motion.
+    <MotionConfig reducedMotion="user">
+      <Routes>
+        {REPORTS.map((report) => (
+          /* key on the element remounts the page between reports so the
+             config-bound hooks never change identity within a mount. */
+          <Route key={report.key} path={report.path} element={<ReportPage key={report.key} report={report} />} />
+        ))}
+        <Route path="*" element={<Navigate to="/sales" replace />} />
+      </Routes>
+    </MotionConfig>
   );
 }
