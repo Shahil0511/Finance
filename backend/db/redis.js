@@ -12,6 +12,7 @@ const CONNECT_TIMEOUT_MS = parseInt(
 
 let client = null;
 let isReady = false;
+let everConnected = false;
 let connectAttempts = 0;
 let lastError = null;
 
@@ -36,6 +37,13 @@ function createRedisClient() {
       connectTimeout: CONNECT_TIMEOUT_MS,
       reconnectStrategy(retries) {
         connectAttempts = retries;
+        // Until the FIRST successful connect, give up after a few attempts so
+        // connect() rejects and the app boots cache-less — otherwise the
+        // returned delay keeps the connect() promise pending forever and a
+        // Redis outage at boot time hangs server startup indefinitely.
+        if (!everConnected && retries >= 3) {
+          return new Error("Redis unreachable at startup");
+        }
         const delay = Math.min(100 * 2 ** retries, MAX_RETRY_DELAY_MS);
         console.warn(`[Redis] Reconnect attempt #${retries + 1} in ${delay}ms`);
         return delay;
@@ -46,6 +54,7 @@ function createRedisClient() {
   c.on("connect", () => console.log("[Redis] Connecting"));
   c.on("ready", () => {
     isReady = true;
+    everConnected = true; // post-boot outages now retry patiently forever
     lastError = null;
     console.log("[Redis] Ready");
   });

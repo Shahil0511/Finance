@@ -9,7 +9,7 @@ const compression = require("compression");
 
 const appConfig = require("./config/appConfig");
 const redis = require("./db/redis");
-const { testConnection, end: closePool } = require("./db/postgres");
+const { testConnection, end: closePool, query: pgQuery } = require("./db/postgres");
 const { requestContext } = require("./middlewares/requestContext");
 const { requestLogger } = require("./middlewares/requestLogger");
 const { attachRequestSignal } = require("./middlewares/requestSignal");
@@ -59,9 +59,24 @@ app.use(requestLogger);
 app.use(attachRequestSignal);
 
 // ─── Health (no auth, no rate limit) ─────────────────────────────────────────
+// Always 200 while the process is up (the DB is external — an outage there
+// shouldn't make orchestrators kill the app); db/redis fields carry the detail.
 app.get("/health", async (_req, res) => {
+  let db = "ok";
+  try {
+    await Promise.race([
+      pgQuery("SELECT 1"),
+      new Promise((_, reject) => {
+        const t = setTimeout(() => reject(new Error("health probe timeout")), 2000);
+        t.unref();
+      }),
+    ]);
+  } catch {
+    db = "unavailable";
+  }
   res.json({
     status: "ok",
+    db,
     timestamp: new Date().toISOString(),
     redis: redis.health(),
   });
@@ -72,8 +87,15 @@ async function start() {
   // Connect Redis (non-blocking — app runs fine without it)
   await redis.connect();
 
-  // Verify Postgres reachability
-  await testConnection();
+  // Verify Postgres reachability. Non-fatal (the external DB may come up later;
+  // /health reports live status) but loud, so a misconfig is obvious at boot.
+  const dbOk = await testConnection();
+  if (!dbOk) {
+    console.error(
+      "[Startup] WARNING: PostgreSQL is unreachable — every report query will fail " +
+        "until it is. Check the DB_* values in backend/.env.",
+    );
+  }
 
   // Build rate limiter after Redis is connected (so it can use Redis store)
   const limiter = await createRateLimiter({
@@ -88,7 +110,12 @@ async function start() {
   app.use(`${basePath}/api/returns`, returnsRoutes);
   app.use("/api/sales", salesRoutes);
   app.use("/api/returns", returnsRoutes);
-  app.use(errorHandler);
+
+  // Unmatched API paths get a JSON 404 instead of falling through to the SPA
+  // catch-all (which would return index.html for a mistyped API URL).
+  app.use([`${basePath}/api`, "/api"], (_req, res) => {
+    res.status(404).json({ error: "Not found" });
+  });
 
   // ─── Serve React frontend in production ───────────────────────────────────
   const frontendPath = path.join(__dirname, "public");
@@ -108,6 +135,9 @@ async function start() {
         });
     });
   });
+
+  // Error handler is registered LAST so it catches errors from every route above.
+  app.use(errorHandler);
 
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`\n Finance Tool backend  →  http://0.0.0.0:${PORT}`);
