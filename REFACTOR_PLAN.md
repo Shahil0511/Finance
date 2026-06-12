@@ -84,11 +84,11 @@ A reporting tool that miscounts money is worse than one that's down.
 **Frontend — 5 parallel marketplace "stacks" that should be ~4 config-driven components:**
 - `SummaryCards` ×5 (~95% identical, differ by a `CARDS` array + which hook), `FiltersPanel` ×5 (~85–90%; `FilterSelect`/`FilterInput`/`DownloadWindowNotice` duplicated verbatim in each; Myntra & TataCliq returns panels ~98% identical), `DataTable` wrappers ×5 (~80–85%), Pages ×5 (~90–95%).
 - **5 Zustand filter stores** identical but for their `DEFAULT_*` constants → a `createFilterStore(defaults)` factory collapses ~40 lines to ~10.
-- **Two export architectures coexist:** saga + `uiSlice` flags (Sales, Returns) vs hand-rolled `fetch`+blob with local `useState` (TataCliq, Omni, Returns "Past Sale Return" button) — `ReturnsDataTable` uses **both at once**. The blob-download dance is copy-pasted **6×**, none of it cancellable.
+- **Two export architectures coexist:** saga + `uiSlice` flags (Sales, Returns) vs hand-rolled `fetch`+blob with local `useState` (TataCliq, Omni, Returns "Past Sale Return" button) — `ReturnsDataTable` uses **both at once**. **(Partly addressed 2026-06-12:** the 6× blob-download dance is now one shared `downloadCsv` helper; the saga-vs-`useState` split still remains, to be unified in Phase 4.)
 - **Not a conflict:** the Redux-vs-Zustand split is fine — theme + filters live in Zustand, server cache + notifications + export flags in Redux; disjoint state. The real issue is the half-migrated export path.
 
 **Frontend bugs worth noting:**
-- Export `fetch`es have **no `AbortController` and no timeout** (`takeLatest` cancels the generator, not the in-flight request) — contradicts `PERFORMANCE_NOTES.md`. `salesSaga.js:20,54`.
+- ~~Export `fetch`es have no `AbortController`/timeout~~ **✅ FIXED 2026-06-12** — all 6 export paths now use a shared `utils/downloadCsv.js` with an AbortController timeout; the sagas also abort the in-flight fetch on `takeLatest` cancel via `cancelled()`.
 - Array index used as React key in all tables (`shared/DataTable.jsx:130`).
 - Sort headers + icon-only pagination not keyboard/AT accessible (`shared/DataTable.jsx:105-117, 161-174`).
 - Filter labels lack `htmlFor`/`id` (all panels).
@@ -137,7 +137,8 @@ A reporting tool that miscounts money is worse than one that's down.
 - [x] **B4/B5/B6:** 5xx error detail hidden in prod (unit-tested); `trust proxy` configurable via `TRUST_PROXY`; CORS default locked to `false`. (`passOnStoreError` left fail-open by design. **B1** dropped — auth handled upstream.)
 - [x] Lifecycle: shutdown now drains the pg pool (`closePool`/`pool.end()`) with a 10s force-exit guard.
 - [ ] Lifecycle (remaining): move per-request `mkdirSync` out of the logging hot path; honor `testConnection()`'s result at startup.
-- [ ] Frontend: `AbortController` + timeout on exports; real row keys; fix `split_remakrs`, the `opacity:1` typo, label `htmlFor`/`id`, keyboard/aria on sort + pagination.
+- [x] Frontend: `AbortController` + timeout on all 6 CSV exports (shared `downloadCsv`; sagas abort on `takeLatest` cancel).
+- [ ] Frontend (remaining): real row keys; fix `split_remakrs`, the `opacity:1` typo, label `htmlFor`/`id`, keyboard/aria on sort + pagination.
 
 ### Phase 3 — Backend structural refactor
 - [ ] Introduce a **report-module factory** parameterized by `{ baseCte, whereSql, exportCols, allowedSortCols, filenamePrefix }` emitting the controller+service+repository trio; extract a shared `B2C_PROJECTION` SQL fragment (kills the 5× paste) and a shared `exportHandler(res, result, prefix)` (kills the 6× block).
@@ -145,7 +146,7 @@ A reporting tool that miscounts money is worse than one that's down.
 
 ### Phase 4 — Frontend structural refactor
 - [ ] Collapse the 5 stacks into **config-driven components** + a per-marketplace registry: one `<SummaryCards>`, one `<FiltersPanel>` (hoist `FilterSelect`/`FilterInput`/`DownloadWindowNotice` into `ui/`), one `<MarketplaceTable>`, one `<ReportPage>` shell driven by a routes array.
-- [ ] Replace the 5 Zustand stores with a `createFilterStore(defaults)` factory; unify both export paths behind one `useCsvExport(endpoint, filenamePrefix)` hook.
+- [ ] Replace the 5 Zustand stores with a `createFilterStore(defaults)` factory; unify both export paths behind one `useCsvExport` hook. (The shared `downloadCsv` helper from Phase 2 is the building block; the saga-vs-`useState` split remains.)
 
 ### Phase 5 — DB performance (DBA-owned; already scoped in PERFORMANCE_NOTES.md)
 - [ ] Pursue index/materialized-view recommendations for the heavy report joins; move large exports to an async job flow. Track separately — needs DBA access, not app changes.

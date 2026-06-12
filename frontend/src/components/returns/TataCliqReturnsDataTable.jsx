@@ -4,6 +4,7 @@ import { addNotification } from '../../features/notifications/notificationsSlice
 import { useGetTataCliqReturnsListQuery } from '../../features/returns/returnsApi';
 import { useTataCliqReturnsFilterStore, cleanParams } from '../../store/useFilterStore';
 import { apiUrl } from '../../config/apiBase';
+import { downloadCsv } from '../../utils/downloadCsv';
 import DataTable from '../shared/DataTable';
 import Badge from '../ui/Badge';
 import { formatDate, getStatusVariant } from '../../utils/formatters';
@@ -43,22 +44,8 @@ export default function TataCliqReturnsDataTable() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const qs = new URLSearchParams(params);
-      const response = await fetch(`${apiUrl("returns/tata-cliq/export")}?${qs}`, {
-        credentials: "same-origin",
-      });
-      if (!response.ok) throw new Error(`Server error ${response.status}`);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const d = new Date();
-      const pad = (n) => String(n).padStart(2, "0");
-      a.href = url;
-      a.download = `tata_cliq_returns_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const url = `${apiUrl("returns/tata-cliq/export")}?${new URLSearchParams(params)}`;
+      await downloadCsv(url, "tata_cliq_returns");
       dispatch(addNotification({ type: "success", message: "Tata Cliq returns exported successfully" }));
     } catch (err) {
       dispatch(addNotification({ type: "error", message: `Export failed: ${err.message}` }));

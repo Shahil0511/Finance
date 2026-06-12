@@ -4,6 +4,7 @@ import { addNotification } from '../../features/notifications/notificationsSlice
 import { useGetMyntraOmniReturnsListQuery } from '../../features/returns/returnsApi';
 import { useMyntraOmniReturnsFilterStore, cleanParams } from '../../store/useFilterStore';
 import { apiUrl } from '../../config/apiBase';
+import { downloadCsv } from '../../utils/downloadCsv';
 import DataTable from '../shared/DataTable';
 import Badge from '../ui/Badge';
 import { formatDate, getStatusVariant } from '../../utils/formatters';
@@ -39,22 +40,8 @@ export default function MyntraOmniReturnsDataTable() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const qs = new URLSearchParams(params);
-      const response = await fetch(`${apiUrl("returns/omni/export")}?${qs}`, {
-        credentials: "same-origin",
-      });
-      if (!response.ok) throw new Error(`Server error ${response.status}`);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const d = new Date();
-      const pad = (n) => String(n).padStart(2, "0");
-      a.href = url;
-      a.download = `myntra_omni_returns_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const url = `${apiUrl("returns/omni/export")}?${new URLSearchParams(params)}`;
+      await downloadCsv(url, "myntra_omni_returns");
       dispatch(addNotification({ type: "success", message: "Myntra Omni returns exported successfully" }));
     } catch (err) {
       dispatch(addNotification({ type: "error", message: `Export failed: ${err.message}` }));
