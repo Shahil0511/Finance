@@ -4,9 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LIBAS Finance — Sales &amp; Returns</title>
+  <meta name="description" content="Internal finance dashboard for daily Sales & Returns reports." />
+  <meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#070c16" media="(prefers-color-scheme: dark)" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    // Apply the persisted theme before first paint to avoid a light-mode flash.
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('libas-theme'));
+        if (s && s.state && s.state.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) { /* corrupted storage — fall back to light */ }
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>

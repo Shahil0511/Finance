@@ -1,114 +1,185 @@
 @import "tailwindcss";
 
-/* ── Dark mode: class-based (.dark on <html>) ─────────────────── */
-@variant dark (&:where(.dark, .dark *));
+/* ── Dark mode: class-based (.dark on <html>) ─────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Custom theme tokens ──────────────────────────────────────── */
+/* ── Design tokens ──────────────────────────────────────────────────────────
+   Semantic CSS variables, themed light/dark. Components reference only these
+   (bg-background, text-muted-foreground, border-border, …) — never raw
+   palette values — so the whole app can be rethemed from this block.        */
+:root {
+  --background:             hsl(216 33% 97%);
+  --foreground:             hsl(222 47% 11%);
+
+  --card:                   hsl(0 0% 100%);
+  --card-foreground:        hsl(222 47% 11%);
+
+  --muted:                  hsl(214 32% 94%);
+  --muted-foreground:       hsl(215 16% 44%);
+
+  --accent:                 hsl(216 33% 94%);
+  --accent-foreground:      hsl(222 47% 11%);
+
+  --border:                 hsl(214 32% 89%);
+  --input:                  hsl(214 32% 86%);
+
+  --primary:                hsl(221 83% 53%);
+  --primary-foreground:     hsl(0 0% 100%);
+
+  --destructive:            hsl(0 72% 51%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --success:                hsl(160 84% 32%);
+  --success-foreground:     hsl(0 0% 100%);
+
+  --warning:                hsl(35 92% 44%);
+  --warning-foreground:     hsl(0 0% 100%);
+
+  --ring:                   hsl(221 83% 53%);
+}
+
+.dark {
+  --background:             hsl(224 47% 5%);
+  --foreground:             hsl(213 27% 90%);
+
+  --card:                   hsl(222 41% 9%);
+  --card-foreground:        hsl(213 27% 90%);
+
+  --muted:                  hsl(220 30% 14%);
+  --muted-foreground:       hsl(216 14% 64%);
+
+  --accent:                 hsl(220 30% 16%);
+  --accent-foreground:      hsl(213 27% 92%);
+
+  --border:                 hsl(219 28% 17%);
+  --input:                  hsl(219 28% 22%);
+
+  --primary:                hsl(217 91% 60%);
+  --primary-foreground:     hsl(0 0% 100%);
+
+  --destructive:            hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --success:                hsl(158 64% 42%);
+  --success-foreground:     hsl(0 0% 100%);
+
+  --warning:                hsl(38 92% 50%);
+  --warning-foreground:     hsl(26 83% 14%);
+
+  --ring:                   hsl(217 91% 60%);
+}
+
+/* Map tokens into Tailwind utility namespaces (bg-*, text-*, border-*, …). */
+@theme inline {
+  --color-background:             var(--background);
+  --color-foreground:             var(--foreground);
+  --color-card:                   var(--card);
+  --color-card-foreground:        var(--card-foreground);
+  --color-muted:                  var(--muted);
+  --color-muted-foreground:       var(--muted-foreground);
+  --color-accent:                 var(--accent);
+  --color-accent-foreground:      var(--accent-foreground);
+  --color-border:                 var(--border);
+  --color-input:                  var(--input);
+  --color-primary:                var(--primary);
+  --color-primary-foreground:     var(--primary-foreground);
+  --color-destructive:            var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success:                var(--success);
+  --color-success-foreground:     var(--success-foreground);
+  --color-warning:                var(--warning);
+  --color-warning-foreground:     var(--warning-foreground);
+  --color-ring:                   var(--ring);
+}
+
 @theme {
-  --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
+  /* Brand scale kept during the component migration; legacy classes only. */
   --color-brand-50:  #eff6ff;
   --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
   --color-brand-400: #60a5fa;
   --color-brand-500: #3b82f6;
   --color-brand-600: #2563eb;
   --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
   --color-brand-900: #1e3a8a;
-  --color-brand-950: #172554;
 
-  --animate-shimmer: shimmer 1.6s infinite linear;
-  --animate-slide-in-right: slide-in-right 0.3s ease-out;
-  --animate-fade-in: fade-in 0.25s ease-out;
-}
-
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
-}
-@keyframes slide-in-right {
-  0%   { transform: translateX(100%); opacity: 0; }
-  100% { transform: translateX(0);    opacity: 1; }
-}
-@keyframes fade-in {
-  0%   { opacity: 0; }
-  100% { opacity: 1; }
+  /* Soft elevation used by cards/popovers — gentler than the default scale. */
+  --shadow-soft: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
+  --shadow-pop:  0 4px 8px -2px rgb(15 23 42 / 0.10), 0 16px 40px -8px rgb(15 23 42 / 0.18);
 }
 
-/* ── Base styles ─────────────────────────────────────────────── */
+/* ── Base styles ──────────────────────────────────────────────────────────── */
 @layer base {
-  html { font-family: var(--font-family-sans); }
+  html {
+    font-family: var(--font-sans);
+    scrollbar-gutter: stable;
+  }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-  }
-  .dark body, :where(.dark, .dark *) body {
-    /* handled by dark: utilities on element */
+    @apply bg-background text-foreground antialiased;
+    text-rendering: optimizeLegibility;
   }
 
-  ::-webkit-scrollbar       { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #f1f5f9; }
-  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-  .dark ::-webkit-scrollbar-track { background: #1e293b; }
-  .dark ::-webkit-scrollbar-thumb { background: #475569; }
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 25%, transparent);
+  }
+
+  ::-webkit-scrollbar       { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--muted-foreground) 35%, transparent);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--muted-foreground) 55%, transparent);
+  }
+
+  /* Honor reduced-motion at the CSS level too (framer handled via MotionConfig). */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
-/* ── Component utilities ─────────────────────────────────────── */
+/* ── Legacy bridge classes (token-based) ──────────────────────────────────────
+   Still referenced by components that are being migrated to the UI kit.
+   Each disappears once its last consumer is rewritten.                        */
 @layer components {
   .card {
-    @apply bg-white rounded-xl border border-slate-200 shadow-sm;
-  }
-  .dark .card {
-    @apply bg-slate-900 border-slate-800;
+    @apply bg-card text-card-foreground rounded-xl border border-border shadow-soft;
   }
 
   .skeleton-block {
-    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.6s infinite linear;
-    border-radius: 4px;
-  }
-  .dark .skeleton-block {
-    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.6s infinite linear;
+    @apply animate-pulse rounded-md bg-muted;
   }
 
   .input-base {
-    @apply text-sm border border-slate-200 rounded-lg px-3 py-2
-           bg-white text-slate-800 placeholder-slate-400
-           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
+    @apply text-sm border border-input rounded-lg px-3 py-2 bg-card text-foreground
+           placeholder:text-muted-foreground/70
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-transparent
            transition-colors;
-  }
-  .dark .input-base {
-    @apply border-slate-700 bg-slate-800 text-slate-200 placeholder-slate-500;
   }
 
   .btn-primary {
     @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg
-           bg-brand-600 text-white
-           hover:bg-brand-700
-           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2
+           bg-primary text-primary-foreground hover:bg-primary/90
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background
            disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
   }
   .btn-ghost {
     @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg
-           text-slate-600 hover:bg-slate-100
-           focus:outline-none focus:ring-2 focus:ring-slate-300
+           text-muted-foreground hover:bg-accent hover:text-accent-foreground
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
            disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
-  }
-  .dark .btn-ghost {
-    @apply text-slate-300 hover:bg-slate-800;
   }
   .btn-outline {
     @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg
-           border border-slate-200 text-slate-700 hover:bg-slate-50
-           focus:outline-none focus:ring-2 focus:ring-slate-300
+           border border-border text-foreground bg-card hover:bg-accent
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
            disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
-  }
-  .dark .btn-outline {
-    @apply border-slate-700 text-slate-300 hover:bg-slate-800;
   }
 }
