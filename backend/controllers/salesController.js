@@ -1,6 +1,7 @@
 "use strict";
 
 const salesService = require("../services/salesService");
+const { streamCsvExport } = require("../utils/csvStream");
 
 function datedFilename(prefix) {
   const d = new Date();
@@ -28,21 +29,8 @@ async function filters(req, res) {
 
 async function exportReport(req, res) {
   res.locals.dbQueries = 1;
-  const result = await salesService.exportCsv(req.validatedQuery, req.requestSignal);
-  if (!result.rows.length) {
-    return res.json({
-      data: [],
-      message: "No records found",
-      executionTimeMs: result.executionTimeMs,
-    });
-  }
-
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${datedFilename("b2c_sales")}"`,
-  );
-  res.send(result.csv);
+  const stream = await salesService.exportStream(req.validatedQuery, req.requestSignal);
+  await streamCsvExport(res, stream, salesService.exportCols, datedFilename("b2c_sales"));
 }
 
 async function tataCliqList(req, res) {
@@ -65,21 +53,8 @@ async function tataCliqFilters(req, res) {
 
 async function tataCliqExportReport(req, res) {
   res.locals.dbQueries = 1;
-  const result = await salesService.exportTataCliqCsv(req.validatedQuery, req.requestSignal);
-  if (!result.rows.length) {
-    return res.json({
-      data: [],
-      message: "No records found",
-      executionTimeMs: result.executionTimeMs,
-    });
-  }
-
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${datedFilename("tata_cliq_sales")}"`,
-  );
-  res.send(result.csv);
+  const stream = await salesService.exportTataCliqStream(req.validatedQuery, req.requestSignal);
+  await streamCsvExport(res, stream, salesService.tataCliqExportCols, datedFilename("tata_cliq_sales"));
 }
 
 module.exports = {

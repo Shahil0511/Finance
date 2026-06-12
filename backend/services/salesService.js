@@ -1,7 +1,6 @@
 "use strict";
 
 const salesRepository = require("../repositories/salesRepository");
-const { buildCsv } = require("../utils/csv");
 const { defaultDates, exclusiveEndDate } = require("../utils/dateRange");
 const { normalizePagination, buildHasMoreResult } = require("../utils/pagination");
 
@@ -67,14 +66,10 @@ async function getFilters(signal) {
   return withExecutionTime(startedAt, data);
 }
 
-async function exportCsv(query, signal) {
-  const startedAt = Date.now();
-  const rows = await salesRepository.exportRows(buildParams(query), signal);
-  return {
-    rows,
-    csv: rows.length ? buildCsv(rows, salesRepository.EXPORT_COLS) : "",
-    executionTimeMs: Date.now() - startedAt,
-  };
+// Returns a row stream (REFACTOR_PLAN.md B2) — the controller pipes it to the
+// response as CSV instead of buffering the whole export in memory.
+function exportStream(query, signal) {
+  return salesRepository.exportStream(buildParams(query), signal);
 }
 
 async function getTataCliqList(query, signal) {
@@ -102,26 +97,22 @@ async function getTataCliqFilters(signal) {
   return withExecutionTime(startedAt, data);
 }
 
-async function exportTataCliqCsv(query, signal) {
-  const startedAt = Date.now();
-  const rows = await salesRepository.tataCliqExportRows(buildTataCliqParams(query), signal);
-  return {
-    rows,
-    csv: rows.length ? buildCsv(rows, salesRepository.TATA_CLIQ_EXPORT_COLS) : "",
-    executionTimeMs: Date.now() - startedAt,
-  };
+function exportTataCliqStream(query, signal) {
+  return salesRepository.tataCliqExportStream(buildTataCliqParams(query), signal);
 }
 
 module.exports = {
   allowedSortCols: salesRepository.ALLOWED_SORT_COLS,
+  exportCols: salesRepository.EXPORT_COLS,
+  tataCliqExportCols: salesRepository.TATA_CLIQ_EXPORT_COLS,
   buildParams,
   buildTataCliqParams,
   getList,
   getSummary,
   getFilters,
-  exportCsv,
+  exportStream,
   getTataCliqList,
   getTataCliqSummary,
   getTataCliqFilters,
-  exportTataCliqCsv,
+  exportTataCliqStream,
 };

@@ -75,9 +75,13 @@ if (!TEST_DATABASE_URL) {
     assert.equal(delhi.state, "DL");
   });
 
-  test("exportRows: same population as list, unpaginated", async () => {
-    const rows = await salesRepo.exportRows(MYNTRA);
+  // B2: exports stream rows via a pg cursor instead of buffering the result set.
+  test("exportStream: streams the same population as list, unpaginated", async () => {
+    const stream = await salesRepo.exportStream(MYNTRA);
+    const rows = [];
+    for await (const row of stream) rows.push(row);
     assert.equal(rows.length, 3);
+    assert.ok(rows.every((r) => r.sales_channel === "MYNTRA"));
   });
 
   test("filters: distinct option lists are populated", async () => {

@@ -21,7 +21,7 @@
 - The TL-provided report SQL bodies contain complex joins and some `SELECT *` wrappers. These were intentionally not rewritten because changing them may change finance report correctness.
 - Summary endpoints still aggregate over the selected date range. Large custom ranges can remain slow if the source tables are very large.
 - Filter option endpoints use `DISTINCT` over source tables. If those columns are not indexed or pre-aggregated, first-load filter option queries can still be expensive.
-- CSV exports are still synchronous. Very large exports can hold an HTTP request open for a long time.
+- CSV exports now stream from Postgres via a cursor (`pg-query-stream`), so server memory stays bounded regardless of export size. Very large exports still hold the HTTP request open for the duration of the download; the async-job recommendation below remains relevant for extremely long-running exports.
 
 ## DBA/admin recommendations
 

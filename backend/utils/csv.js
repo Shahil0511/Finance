@@ -14,13 +14,16 @@ function formatCsvVal(v) {
   return s.replace(/"/g, '""');
 }
 
-function buildCsv(rows, columns) {
-  return [
-    columns.map(([, h]) => h).join(","),
-    ...rows.map((r) =>
-      columns.map(([k]) => `"${formatCsvVal(r[k])}"`).join(","),
-    ),
-  ].join("\n");
+function csvHeader(columns) {
+  return columns.map(([, h]) => h).join(",");
 }
 
-module.exports = { buildCsv, formatCsvVal };
+function csvRow(row, columns) {
+  return columns.map(([k]) => `"${formatCsvVal(row[k])}"`).join(",");
+}
+
+function buildCsv(rows, columns) {
+  return [csvHeader(columns), ...rows.map((r) => csvRow(r, columns))].join("\n");
+}
+
+module.exports = { buildCsv, csvHeader, csvRow, formatCsvVal };

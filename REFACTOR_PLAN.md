@@ -47,7 +47,7 @@ A reporting tool that miscounts money is worse than one that's down.
 | # | Sev | Issue | Location |
 |---|-----|-------|----------|
 | B1 | N/A — by design | **No in-process auth, intentionally.** Auth/authz is handled by the upstream system (Data Nexus / session cookies); this service is never exposed directly. **No action** — confirmed with owner 2026-06-12. (Stray `API_SECRET`/auth references scrubbed from `.env.example`.) | `server.js:76` |
-| B2 | Medium | **CSV export buffers the entire result set** (no `LIMIT`, `.join("\n")` of all rows, array + string both retained) → OOM on a large month. | `csv.js:12-19`; `salesRepository.js:463-471` |
+| B2 | ✅ Fixed | **CSV export buffered the entire result set** → OOM risk on a large month. **FIXED 2026-06-12** — all 6 exports stream via `pg-query-stream` (cursor, batch 500) through `utils/csvStream.js` with backpressure; first row pulled before headers so query errors still 500; mid-stream errors destroy the socket. Empty exports now return a header-only CSV (previously a JSON body saved as `.csv`). Verified by integration tests. | `db/postgres.js:queryStream`, `utils/csvStream.js` |
 | B3 | ✅ Fixed | **CSV formula injection.** **FIXED 2026-06-12** — `formatCsvVal` prefixes leading `=`/`@` (and `+`/`-` not followed by a digit) with `'` so they stay text; negative numbers untouched. Unit-tested. | `csv.js` |
 | B4 | ✅ Fixed | **Error detail leaked to clients.** **FIXED 2026-06-12** — 5xx now returns a generic message (raw detail only when `NODE_ENV !== production`); 4xx still surfaces the intended publicMessage/detail. Unit-tested. | `middlewares/errorHandler.js` |
 | B5 | ✅ Fixed | **Rate limiting collapsed behind a proxy.** **FIXED 2026-06-12** — `trust proxy` is now configurable via `TRUST_PROXY` so `req.ip` is the real client. (`passOnStoreError:true` left as-is — fail-open on a Redis blip is intentional.) | `server.js` |
@@ -133,7 +133,7 @@ A reporting tool that miscounts money is worse than one that's down.
 - [x] **A3 + A6:** sales `total_sale_value`/`total_tax` now `SUM(unit_sale_price::numeric * dispatched_quantity)` in both generic + TataCliq summaries (owner chose × qty; 2026-06-12). Verified by integration tests.
 - [ ] **A4:** per-query sort allow-lists + a **repo-internal** `sortBy ∈ allowed` / `sortDir ∈ {ASC,DESC}` guard.
 - [x] **B3:** CSV formula injection neutralized — `'` prefix on leading `=`/`@` and `+`/`-`-not-digit, number-safe. Unit-tested.
-- [ ] **B2:** stream + bound CSV exports (still buffered; needs a pg cursor/stream — deferred as its own change).
+- [x] **B2:** all 6 CSV exports now stream via a pg cursor (`pg-query-stream` + `csvStream.js`) — bounded memory, proper 500s on query errors, socket abort on mid-stream failure. Verified by integration tests.
 - [x] **B4/B5/B6:** 5xx error detail hidden in prod (unit-tested); `trust proxy` configurable via `TRUST_PROXY`; CORS default locked to `false`. (`passOnStoreError` left fail-open by design. **B1** dropped — auth handled upstream.)
 - [x] Lifecycle: shutdown now drains the pg pool (`closePool`/`pool.end()`) with a 10s force-exit guard.
 - [ ] Lifecycle (remaining): move per-request `mkdirSync` out of the logging hot path; honor `testConnection()`'s result at startup.

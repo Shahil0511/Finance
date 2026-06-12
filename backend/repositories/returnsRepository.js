@@ -1023,22 +1023,22 @@ async function filters(signal) {
   };
 }
 
-async function exportRows(params, signal) {
+async function exportStream(params, signal) {
   const sql = `
     SELECT * FROM (${RETURN_EXPORT_QUERY}) t1
     ${OUTER_WHERE}
     ORDER BY return_order_processed_time DESC
   `;
-  return db.query(sql, params, signal);
+  return db.queryStream(sql, params, signal);
 }
 
-async function pastReturnExportRows(params, signal) {
+async function pastReturnExportStream(params, signal) {
   const sql = `
     SELECT * FROM (${PAST_RETURN_EXPORT_QUERY}) t1
     ${OUTER_WHERE}
     ORDER BY return_order_processed_time DESC
   `;
-  return db.query(sql, params, signal);
+  return db.queryStream(sql, params, signal);
 }
 
 async function omniList(params, { sortBy, sortDir, pageLimit, offset, signal }) {
@@ -1096,13 +1096,13 @@ async function omniFilters(signal) {
   };
 }
 
-async function omniExportRows(params, signal) {
+async function omniExportStream(params, signal) {
   const sql = `
     SELECT * FROM (${OMNI_RETURN_QUERY}) t1
     ${OMNI_OUTER_WHERE}
     ORDER BY return_order_processed_time DESC
   `;
-  return db.query(sql, params, signal);
+  return db.queryStream(sql, params, signal);
 }
 
 async function tataCliqList(params, { sortBy, sortDir, pageLimit, offset, signal }) {
@@ -1160,13 +1160,13 @@ async function tataCliqFilters(signal) {
   };
 }
 
-async function tataCliqExportRows(params, signal) {
+async function tataCliqExportStream(params, signal) {
   const sql = `
     SELECT * FROM (${TATA_CLIQ_RETURN_QUERY}) t1
     ${TATA_CLIQ_RETURN_WHERE}
     ORDER BY return_order_processed_time DESC
   `;
-  return db.query(sql, params, signal);
+  return db.queryStream(sql, params, signal);
 }
 
 module.exports = {
@@ -1176,14 +1176,14 @@ module.exports = {
   list,
   summary,
   filters,
-  exportRows,
-  pastReturnExportRows,
+  exportStream,
+  pastReturnExportStream,
   omniList,
   omniSummary,
   omniFilters,
-  omniExportRows,
+  omniExportStream,
   tataCliqList,
   tataCliqSummary,
   tataCliqFilters,
-  tataCliqExportRows,
+  tataCliqExportStream,
 };

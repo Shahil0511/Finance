@@ -1,7 +1,6 @@
 "use strict";
 
 const returnsRepository = require("../repositories/returnsRepository");
-const { buildCsv } = require("../utils/csv");
 const { defaultDates, exclusiveEndDate } = require("../utils/dateRange");
 const { normalizePagination, buildHasMoreResult } = require("../utils/pagination");
 
@@ -71,24 +70,14 @@ async function getFilters(signal) {
   return withExecutionTime(startedAt, data);
 }
 
-async function exportCsv(query, signal) {
-  const startedAt = Date.now();
-  const rows = await returnsRepository.exportRows(buildParams(query), signal);
-  return {
-    rows,
-    csv: rows.length ? buildCsv(rows, returnsRepository.EXPORT_COLS) : "",
-    executionTimeMs: Date.now() - startedAt,
-  };
+// Row streams (REFACTOR_PLAN.md B2) — controllers pipe these to the response
+// as CSV instead of buffering whole exports in memory.
+function exportStream(query, signal) {
+  return returnsRepository.exportStream(buildParams(query), signal);
 }
 
-async function exportPastReturnCsv(query, signal) {
-  const startedAt = Date.now();
-  const rows = await returnsRepository.pastReturnExportRows(buildParams(query), signal);
-  return {
-    rows,
-    csv: rows.length ? buildCsv(rows, returnsRepository.EXPORT_COLS) : "",
-    executionTimeMs: Date.now() - startedAt,
-  };
+function exportPastReturnStream(query, signal) {
+  return returnsRepository.pastReturnExportStream(buildParams(query), signal);
 }
 
 async function getOmniList(query, signal) {
@@ -116,14 +105,8 @@ async function getOmniFilters(signal) {
   return withExecutionTime(startedAt, data);
 }
 
-async function exportOmniCsv(query, signal) {
-  const startedAt = Date.now();
-  const rows = await returnsRepository.omniExportRows(buildOmniParams(query), signal);
-  return {
-    rows,
-    csv: rows.length ? buildCsv(rows, returnsRepository.EXPORT_COLS) : "",
-    executionTimeMs: Date.now() - startedAt,
-  };
+function exportOmniStream(query, signal) {
+  return returnsRepository.omniExportStream(buildOmniParams(query), signal);
 }
 
 async function getTataCliqList(query, signal) {
@@ -151,32 +134,28 @@ async function getTataCliqFilters(signal) {
   return withExecutionTime(startedAt, data);
 }
 
-async function exportTataCliqCsv(query, signal) {
-  const startedAt = Date.now();
-  const rows = await returnsRepository.tataCliqExportRows(buildTataCliqParams(query), signal);
-  return {
-    rows,
-    csv: rows.length ? buildCsv(rows, returnsRepository.TATA_CLIQ_EXPORT_COLS) : "",
-    executionTimeMs: Date.now() - startedAt,
-  };
+function exportTataCliqStream(query, signal) {
+  return returnsRepository.tataCliqExportStream(buildTataCliqParams(query), signal);
 }
 
 module.exports = {
   allowedSortCols: returnsRepository.ALLOWED_SORT_COLS,
+  exportCols: returnsRepository.EXPORT_COLS,
+  tataCliqExportCols: returnsRepository.TATA_CLIQ_EXPORT_COLS,
   buildParams,
   buildOmniParams,
   buildTataCliqParams,
   getList,
   getSummary,
   getFilters,
-  exportCsv,
-  exportPastReturnCsv,
+  exportStream,
+  exportPastReturnStream,
   getOmniList,
   getOmniSummary,
   getOmniFilters,
-  exportOmniCsv,
+  exportOmniStream,
   getTataCliqList,
   getTataCliqSummary,
   getTataCliqFilters,
-  exportTataCliqCsv,
+  exportTataCliqStream,
 };

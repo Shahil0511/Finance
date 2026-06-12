@@ -1,6 +1,7 @@
 "use strict";
 
 const returnsService = require("../services/returnsService");
+const { streamCsvExport } = require("../utils/csvStream");
 
 function datedFilename(prefix) {
   const d = new Date();
@@ -28,40 +29,14 @@ async function filters(req, res) {
 
 async function exportReport(req, res) {
   res.locals.dbQueries = 1;
-  const result = await returnsService.exportCsv(req.validatedQuery, req.requestSignal);
-  if (!result.rows.length) {
-    return res.json({
-      data: [],
-      message: "No records found",
-      executionTimeMs: result.executionTimeMs,
-    });
-  }
-
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${datedFilename("returns_report")}"`,
-  );
-  res.send(result.csv);
+  const stream = await returnsService.exportStream(req.validatedQuery, req.requestSignal);
+  await streamCsvExport(res, stream, returnsService.exportCols, datedFilename("returns_report"));
 }
 
 async function pastReturnExportReport(req, res) {
   res.locals.dbQueries = 1;
-  const result = await returnsService.exportPastReturnCsv(req.validatedQuery, req.requestSignal);
-  if (!result.rows.length) {
-    return res.json({
-      data: [],
-      message: "No records found",
-      executionTimeMs: result.executionTimeMs,
-    });
-  }
-
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${datedFilename("past_returns_report")}"`,
-  );
-  res.send(result.csv);
+  const stream = await returnsService.exportPastReturnStream(req.validatedQuery, req.requestSignal);
+  await streamCsvExport(res, stream, returnsService.exportCols, datedFilename("past_returns_report"));
 }
 
 async function omniList(req, res) {
@@ -84,21 +59,8 @@ async function omniFilters(req, res) {
 
 async function omniExportReport(req, res) {
   res.locals.dbQueries = 1;
-  const result = await returnsService.exportOmniCsv(req.validatedQuery, req.requestSignal);
-  if (!result.rows.length) {
-    return res.json({
-      data: [],
-      message: "No records found",
-      executionTimeMs: result.executionTimeMs,
-    });
-  }
-
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${datedFilename("myntra_omni_returns")}"`,
-  );
-  res.send(result.csv);
+  const stream = await returnsService.exportOmniStream(req.validatedQuery, req.requestSignal);
+  await streamCsvExport(res, stream, returnsService.exportCols, datedFilename("myntra_omni_returns"));
 }
 
 async function tataCliqList(req, res) {
@@ -121,21 +83,8 @@ async function tataCliqFilters(req, res) {
 
 async function tataCliqExportReport(req, res) {
   res.locals.dbQueries = 1;
-  const result = await returnsService.exportTataCliqCsv(req.validatedQuery, req.requestSignal);
-  if (!result.rows.length) {
-    return res.json({
-      data: [],
-      message: "No records found",
-      executionTimeMs: result.executionTimeMs,
-    });
-  }
-
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${datedFilename("tata_cliq_returns")}"`,
-  );
-  res.send(result.csv);
+  const stream = await returnsService.exportTataCliqStream(req.validatedQuery, req.requestSignal);
+  await streamCsvExport(res, stream, returnsService.tataCliqExportCols, datedFilename("tata_cliq_returns"));
 }
 
 module.exports = {

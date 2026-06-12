@@ -88,4 +88,16 @@ if (!TEST_DATABASE_URL) {
     assert.ok(f.salesChannels.includes("flipkart"));
     assert.ok(f.salesChannels.includes("myntra-omni"));
   });
+
+  // B2: the returns export (the largest query) streams via a pg cursor.
+  test("exportStream: streams the strict export population", async () => {
+    const stream = await returnsRepo.exportStream(RET);
+    const rows = [];
+    for await (const row of stream) rows.push(row);
+    // RETURN_EXPORT_QUERY filters item_id NOT NULL + forward order >= 2026-01-01
+    // and exposes rw for dedup — RA is the only qualifying return.
+    const visible = rows.filter((r) => Number(r.rw) === 1);
+    assert.equal(visible.length, 1);
+    assert.equal(visible[0].return_order_item_id, "RA");
+  });
 }

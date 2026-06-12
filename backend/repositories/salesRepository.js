@@ -460,14 +460,14 @@ async function filters(signal) {
   };
 }
 
-async function exportRows(params, signal) {
+async function exportStream(params, signal) {
   const sql = `
     ${B2C_CTES}
     SELECT * FROM base
     ${OUTER_WHERE}
     ORDER BY handover_time DESC
   `;
-  return db.query(sql, params, signal);
+  return db.queryStream(sql, params, signal);
 }
 
 async function tataCliqList(params, { sortBy, sortDir, pageLimit, offset, signal }) {
@@ -533,13 +533,13 @@ async function tataCliqFilters(signal) {
   };
 }
 
-async function tataCliqExportRows(params, signal) {
+async function tataCliqExportStream(params, signal) {
   const sql = `
     SELECT * FROM (${TATA_CLIQ_QUERY}) t1
     ${TATA_CLIQ_WHERE}
     ORDER BY handover_time DESC
   `;
-  return db.query(sql, params, signal);
+  return db.queryStream(sql, params, signal);
 }
 
 module.exports = {
@@ -549,9 +549,9 @@ module.exports = {
   list,
   summary,
   filters,
-  exportRows,
+  exportStream,
   tataCliqList,
   tataCliqSummary,
   tataCliqFilters,
-  tataCliqExportRows,
+  tataCliqExportStream,
 };

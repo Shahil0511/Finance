@@ -1,4 +1,5 @@
 const { Pool } = require("pg");
+const QueryStream = require("pg-query-stream");
 require("dotenv").config();
 
 const pool = new Pool({
@@ -83,6 +84,53 @@ async function query(sql, params = [], signal) {
   }
 }
 
+/**
+ * Streams query rows via a cursor instead of buffering the full result set.
+ * Mirrors query()'s lifecycle: abort via pg_cancel_backend, client error
+ * tracking, and guaranteed release when the stream closes.
+ */
+async function queryStream(sql, params = [], signal) {
+  if (signal?.aborted) throw Object.assign(new Error("Request aborted"), { code: "CANCELLED" });
+
+  const client = await pool.connect();
+  let released = false;
+  let clientError = null;
+  let streamError = null;
+
+  const onClientError = (err) => {
+    clientError = err;
+    console.error("[PostgreSQL] Active client error:", err.message);
+  };
+  client.on("error", onClientError);
+
+  const stream = client.query(new QueryStream(sql, params, { batchSize: 500 }));
+
+  const onAbort = () => {
+    const pid = client.processID;
+    if (pid) {
+      pool.connect()
+        .then((c) => c.query("SELECT pg_cancel_backend($1)", [pid]).finally(() => c.release()))
+        .catch(() => {});
+    }
+    stream.destroy(Object.assign(new Error("Request aborted"), { code: "CANCELLED" }));
+  };
+  if (signal) signal.addEventListener("abort", onAbort, { once: true });
+
+  const release = () => {
+    if (released) return;
+    released = true;
+    if (signal) signal.removeEventListener("abort", onAbort);
+    client.removeListener("error", onClientError);
+    const err = streamError || clientError;
+    client.release(err ? err : undefined);
+  };
+
+  stream.on("error", (err) => { streamError = err; });
+  stream.on("close", release);
+
+  return stream;
+}
+
 /** Call at the top of every route handler. Returns { signal } and wires abort on client disconnect. */
 function makeRequestSignal(req) {
   const ac = new AbortController();
@@ -108,4 +156,4 @@ async function end() {
   await pool.end();
 }
 
-module.exports = { query, testConnection, makeRequestSignal, end };
+module.exports = { query, queryStream, testConnection, makeRequestSignal, end };
