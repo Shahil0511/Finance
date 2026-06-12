@@ -35,13 +35,14 @@ test("buildCsv: missing keys render as empty quoted cells", () => {
   assert.equal(buildCsv([{ a: "x" }], cols), 'A,B\n"x",""');
 });
 
-// ─── CHARACTERIZATION of bug B3 (REFACTOR_PLAN.md) ───────────────────────────
-// CSV formula injection is NOT neutralized: a value starting with = + - @ is
-// written verbatim and will execute as a formula in Excel/Sheets. This pins the
-// CURRENT (unsafe) behavior; Phase 2 will prefix such values with a single quote
-// and this assertion will be updated to expect the sanitized form.
-test("[characterizes bug B3] leading =/+/-/@ are NOT sanitized (formula injection)", () => {
+// ─── B3 FIXED (REFACTOR_PLAN.md) ─────────────────────────────────────────────
+// Formula-trigger values are prefixed with ' so Excel/Sheets treat them as text,
+// while legitimate numbers (including negatives) are left untouched.
+test("[B3 fixed] formula triggers are quoted; numbers are left alone", () => {
   const cols = [["x", "X"]];
-  assert.equal(buildCsv([{ x: "=1+1" }], cols), 'X\n"=1+1"');
-  assert.equal(buildCsv([{ x: "@SUM(A1)" }], cols), 'X\n"@SUM(A1)"');
+  assert.equal(buildCsv([{ x: "=1+1" }], cols), `X\n"'=1+1"`);
+  assert.equal(buildCsv([{ x: "@SUM(A1)" }], cols), `X\n"'@SUM(A1)"`);
+  assert.equal(buildCsv([{ x: "-cmd|'/c calc'" }], cols), `X\n"'-cmd|'/c calc'"`);
+  assert.equal(buildCsv([{ x: "-5.00" }], cols), 'X\n"-5.00"'); // negative number untouched
+  assert.equal(buildCsv([{ x: "Acme" }], cols), 'X\n"Acme"');
 });

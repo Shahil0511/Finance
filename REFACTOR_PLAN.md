@@ -48,10 +48,10 @@ A reporting tool that miscounts money is worse than one that's down.
 |---|-----|-------|----------|
 | B1 | N/A — by design | **No in-process auth, intentionally.** Auth/authz is handled by the upstream system (Data Nexus / session cookies); this service is never exposed directly. **No action** — confirmed with owner 2026-06-12. (Stray `API_SECRET`/auth references scrubbed from `.env.example`.) | `server.js:76` |
 | B2 | Medium | **CSV export buffers the entire result set** (no `LIMIT`, `.join("\n")` of all rows, array + string both retained) → OOM on a large month. | `csv.js:12-19`; `salesRepository.js:463-471` |
-| B3 | Medium | **CSV formula injection** — only quotes escaped; values starting `= + - @` (e.g. `brand` from channel feeds) execute as formulas in Excel/Sheets. | `csv.js:9` |
-| B4 | Medium | **Error detail leaks to clients** — `detail: err.detail || err.message` returns raw `pg` errors (table/column names) on 500s. | `middlewares/errorHandler.js:21` |
-| B5 | Medium | **Rate limiting collapses behind a proxy** — keyed on `req.ip` but `trust proxy` never set, so all clients share one bucket behind Nginx/IIS. `passOnStoreError:true` → a Redis blip disables limiting. | `rateLimiter.js:104-112`; `server.js` |
-| B6 | Medium | **CORS defaults to `*`** (GET-only) — too open for an internal tool with no in-process auth. | `server.js:37-42` |
+| B3 | ✅ Fixed | **CSV formula injection.** **FIXED 2026-06-12** — `formatCsvVal` prefixes leading `=`/`@` (and `+`/`-` not followed by a digit) with `'` so they stay text; negative numbers untouched. Unit-tested. | `csv.js` |
+| B4 | ✅ Fixed | **Error detail leaked to clients.** **FIXED 2026-06-12** — 5xx now returns a generic message (raw detail only when `NODE_ENV !== production`); 4xx still surfaces the intended publicMessage/detail. Unit-tested. | `middlewares/errorHandler.js` |
+| B5 | ✅ Fixed | **Rate limiting collapsed behind a proxy.** **FIXED 2026-06-12** — `trust proxy` is now configurable via `TRUST_PROXY` so `req.ip` is the real client. (`passOnStoreError:true` left as-is — fail-open on a Redis blip is intentional.) | `server.js` |
+| B6 | ✅ Fixed | **CORS defaulted to `*`.** **FIXED 2026-06-12** — default is now `false` (no cross-origin; the SPA is same-origin); set `CORS_ORIGIN` to allow a specific origin. | `server.js` |
 | B7 | Medium | **Real credentials in working-tree env files** (not in git, but `backend/.env.example` — a template meant to be shared — holds a real `MSSQL_PASSWORD`/`API_SECRET`; root `.env` + `backend/.env` hold a real DB password). Scrub to placeholders; rotate anything shared. | `backend/.env.example`, `.env` |
 | B8 | Low | `DB_SSL=true` sets `rejectUnauthorized:false` (accepts any cert → MITM). `ORDER BY ${sortBy}` is interpolated — safe today only via the upstream validator; no repo-internal guard. | `postgres.js:11`; `salesRepository.js:383` |
 
@@ -132,9 +132,11 @@ A reporting tool that miscounts money is worse than one that's down.
 - [x] **A2:** added `DISTINCT ON (channel_order_id, client_sku_id_ean)` to the omni b2c CTE (2026-06-12) — omni summary/list no longer double-count via b2c fan-out. Verified by integration tests.
 - [x] **A3 + A6:** sales `total_sale_value`/`total_tax` now `SUM(unit_sale_price::numeric * dispatched_quantity)` in both generic + TataCliq summaries (owner chose × qty; 2026-06-12). Verified by integration tests.
 - [ ] **A4:** per-query sort allow-lists + a **repo-internal** `sortBy ∈ allowed` / `sortDir ∈ {ASC,DESC}` guard.
-- [ ] **B2/B3:** stream + bound CSV exports; prefix `= + - @` values with `'`.
-- [ ] **B4:** stop returning raw error `detail` in non-dev. **B5:** set `trust proxy`; reconsider `passOnStoreError`. **B6:** default CORS to an allowlist. (**B1** dropped — auth is handled upstream by design.)
-- [ ] Lifecycle: `pool.end()` on shutdown + force-exit timeout; move per-request `mkdirSync` out of the logging hot path; honor `testConnection()`'s result.
+- [x] **B3:** CSV formula injection neutralized — `'` prefix on leading `=`/`@` and `+`/`-`-not-digit, number-safe. Unit-tested.
+- [ ] **B2:** stream + bound CSV exports (still buffered; needs a pg cursor/stream — deferred as its own change).
+- [x] **B4/B5/B6:** 5xx error detail hidden in prod (unit-tested); `trust proxy` configurable via `TRUST_PROXY`; CORS default locked to `false`. (`passOnStoreError` left fail-open by design. **B1** dropped — auth handled upstream.)
+- [x] Lifecycle: shutdown now drains the pg pool (`closePool`/`pool.end()`) with a 10s force-exit guard.
+- [ ] Lifecycle (remaining): move per-request `mkdirSync` out of the logging hot path; honor `testConnection()`'s result at startup.
 - [ ] Frontend: `AbortController` + timeout on exports; real row keys; fix `split_remakrs`, the `opacity:1` typo, label `htmlFor`/`id`, keyboard/aria on sort + pagination.
 
 ### Phase 3 — Backend structural refactor

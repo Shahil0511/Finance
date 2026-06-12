@@ -9,7 +9,7 @@ const compression = require("compression");
 
 const appConfig = require("./config/appConfig");
 const redis = require("./db/redis");
-const { testConnection } = require("./db/postgres");
+const { testConnection, end: closePool } = require("./db/postgres");
 const { requestContext } = require("./middlewares/requestContext");
 const { requestLogger } = require("./middlewares/requestLogger");
 const { attachRequestSignal } = require("./middlewares/requestSignal");
@@ -33,10 +33,20 @@ app.use(
   }),
 );
 
+// ─── Trust proxy ──────────────────────────────────────────────────────────────
+// Behind a reverse proxy (Nginx/IIS), trust X-Forwarded-* so req.ip is the real
+// client and per-client rate limiting works. Set TRUST_PROXY to the hop count.
+const trustProxy = process.env.TRUST_PROXY;
+if (trustProxy) {
+  app.set("trust proxy", /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
+}
+
 // ─── CORS ─────────────────────────────────────────────────────────────────────
+// Default: no cross-origin access (the SPA is served same-origin). Set CORS_ORIGIN
+// to explicitly allow a specific cross-origin client.
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: process.env.CORS_ORIGIN || false,
     methods: ["GET"],
   }),
 );
@@ -109,8 +119,16 @@ async function start() {
   });
   async function shutdown(signal) {
     console.log(`[Server] ${signal} received, shutting down`);
+    // Force-exit guard so a hung connection can't block shutdown forever.
+    const forceExit = setTimeout(() => {
+      console.error("[Server] Forced exit after 10s");
+      process.exit(1);
+    }, 10_000);
+    forceExit.unref();
     server.close(async () => {
-      await redis.close();
+      try { await redis.close(); } catch {}
+      try { await closePool(); } catch {}
+      clearTimeout(forceExit);
       process.exit(0);
     });
   }
