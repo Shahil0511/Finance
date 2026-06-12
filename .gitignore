@@ -36,3 +36,4 @@ uploads/
 
 # committed build output (frontend bundle is produced by Docker / `npm run build`)
 backend/public/
+frontend/scripts/*.png
