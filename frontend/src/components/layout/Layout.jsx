@@ -21,9 +21,9 @@ export default function Layout({ title, children }) {
       <DesktopSidebar />
       <MobileSidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <div className="flex min-h-screen flex-col lg:pl-72">
+      <div className="flex min-h-screen flex-col lg:pl-60">
         <Topbar title={title} onMenu={() => setMenuOpen(true)} />
-        <main id="main" className="mx-auto w-full max-w-screen-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <main id="main" className="mx-auto w-full max-w-screen-2xl flex-1 px-4 py-5 sm:px-6 sm:py-6">
           {children}
         </main>
       </div>

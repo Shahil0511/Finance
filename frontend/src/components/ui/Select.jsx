@@ -91,8 +91,8 @@ export default function Select({
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         className={cn(
-          'flex h-11 w-full items-center justify-between gap-2 rounded-lg border bg-card pl-3 pr-2.5 text-sm sm:h-10',
-          'transition-all duration-200',
+          'flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-card pl-2.5 pr-2 text-[13px] sm:h-9',
+          'transition-colors duration-150',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-transparent',
           'disabled:cursor-not-allowed disabled:opacity-50',
           open ? 'border-primary/60 ring-2 ring-primary/20' : 'border-input hover:border-muted-foreground/40',
@@ -119,7 +119,7 @@ export default function Select({
               exit={{ opacity: 0, y: placement === 'top' ? 6 : -6, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 500, damping: 34, mass: 0.6 }}
               className={cn(
-                'overflow-hidden rounded-xl border border-border bg-card shadow-pop',
+                'overflow-hidden rounded-lg border border-border bg-card shadow-pop',
                 placement === 'top' ? 'origin-bottom' : 'origin-top',
               )}
             >
@@ -151,7 +151,7 @@ export default function Select({
                       onMouseEnter={() => setActive(i)}
                       onClick={() => commit(option)}
                       className={cn(
-                        'flex min-h-9 cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors duration-100',
+                        'flex min-h-8 cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-[13px] transition-colors duration-100',
                         active === i ? 'bg-accent text-accent-foreground' : 'text-foreground/90',
                         selected && 'font-medium text-primary',
                       )}

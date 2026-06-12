@@ -42,8 +42,8 @@ export default function DatePicker({ value, onChange, id, disabled = false }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         className={cn(
-          'flex h-11 w-full items-center gap-2.5 rounded-lg border bg-card px-3 text-sm sm:h-10',
-          'transition-all duration-200',
+          'flex h-10 w-full items-center gap-2 rounded-md border bg-card px-2.5 text-[13px] sm:h-9',
+          'transition-colors duration-150',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-transparent',
           'disabled:cursor-not-allowed disabled:opacity-50',
           open ? 'border-primary/60 ring-2 ring-primary/20' : 'border-input hover:border-muted-foreground/40',
@@ -68,7 +68,7 @@ export default function DatePicker({ value, onChange, id, disabled = false }) {
               exit={{ opacity: 0, y: placement === 'top' ? 6 : -6, scale: 0.96 }}
               transition={{ type: 'spring', stiffness: 480, damping: 32, mass: 0.6 }}
               className={cn(
-                'rounded-xl border border-border bg-card p-3 shadow-pop',
+                'rounded-lg border border-border bg-card p-3 shadow-pop',
                 placement === 'top' ? 'origin-bottom' : 'origin-top',
               )}
             >

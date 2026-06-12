@@ -52,10 +52,10 @@ export default function DataTable({
 
   return (
     <motion.div
-      className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
-      initial={{ opacity: 0, y: 10 }}
+      className="relative overflow-hidden rounded-lg border border-border bg-card shadow-soft"
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       {isFetching && (
         <div className="absolute left-0 right-0 top-0 z-10 h-0.5 overflow-hidden" aria-hidden="true">
@@ -69,16 +69,15 @@ export default function DataTable({
       )}
 
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3.5 sm:px-5">
-        <div className="min-w-0">
-          {title && <h3 className="text-sm font-semibold text-card-foreground">{title}</h3>}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-2.5">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5">
+          {title && <h3 className="text-[13px] font-semibold text-card-foreground">{title}</h3>}
           {showSkeleton ? (
-            <LoadingBanner className="mt-1" />
+            <LoadingBanner />
           ) : (
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="text-xs tabular-nums text-muted-foreground">
               {recordLabel}
-              {queryTime ? <span aria-hidden="true"> · </span> : null}
-              {queryTime ? `Query ${queryTime}` : null}
+              {queryTime ? ` · ${queryTime}` : null}
             </p>
           )}
         </div>
@@ -95,7 +94,7 @@ export default function DataTable({
                   key={col.key}
                   scope="col"
                   aria-sort={sortBy === col.key ? (sortDir === 'ASC' ? 'ascending' : 'descending') : undefined}
-                  className="select-none whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground first:pl-4 last:pr-4 sm:first:pl-5 sm:last:pr-5"
+                  className="select-none whitespace-nowrap px-3 py-2 text-left text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground first:pl-4 last:pr-4"
                 >
                   {col.sortable ? (
                     <button
@@ -126,12 +125,12 @@ export default function DataTable({
               data.map((row, i) => (
                 <tr
                   key={rowKey ? rowKey(row, i) : i}
-                  className="transition-colors duration-150 hover:bg-accent/60"
+                  className="transition-colors duration-100 hover:bg-accent/50"
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className="max-w-56 truncate whitespace-nowrap px-3 py-2.5 text-[13px] text-foreground/90 first:pl-4 first:font-medium first:text-foreground last:pr-4 sm:first:pl-5 sm:last:pr-5"
+                      className="max-w-56 truncate whitespace-nowrap px-3 py-2 text-[12.5px] text-foreground/90 first:pl-4 first:font-medium first:text-foreground last:pr-4"
                     >
                       {col.render ? col.render(row[col.key], row) : (row[col.key] ?? '—')}
                     </td>
@@ -144,33 +143,33 @@ export default function DataTable({
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Rows</span>
+          <span className="text-xs text-muted-foreground">Rows per page</span>
           <div className="relative">
             <select
               value={pageSize}
               onChange={(e) => onPageSize?.(Number(e.target.value))}
               aria-label="Rows per page"
-              className="h-9 appearance-none rounded-lg border border-input bg-card pl-2.5 pr-7 text-xs text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-8 appearance-none rounded-md border border-input bg-card pl-2 pr-6 text-xs text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {[25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2.5">
           <span className="text-xs tabular-nums text-muted-foreground">
-            {from.toLocaleString('en-IN')}–{to.toLocaleString('en-IN')} of {total.toLocaleString('en-IN')}{estimated && hasMore ? '+' : ''}
+            Showing {from.toLocaleString('en-IN')}–{to.toLocaleString('en-IN')} of {total.toLocaleString('en-IN')}{estimated && hasMore ? '+' : ''}
           </span>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1">
             <button
               onClick={() => onPage?.(page - 1)}
               disabled={page <= 1}
               aria-label="Previous page"
               className={cn(
-                'flex size-11 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-sm transition-colors sm:size-9',
+                'flex size-10 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors sm:size-8',
                 'hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 'disabled:pointer-events-none disabled:opacity-40',
               )}
@@ -182,7 +181,7 @@ export default function DataTable({
               disabled={!(hasMore || page < totalPages)}
               aria-label="Next page"
               className={cn(
-                'flex size-11 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-sm transition-colors sm:size-9',
+                'flex size-10 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors sm:size-8',
                 'hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 'disabled:pointer-events-none disabled:opacity-40',
               )}

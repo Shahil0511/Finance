@@ -30,13 +30,6 @@ export const formatDate = (v) => {
   return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', hour12: false });
 };
 
-export const formatDateOnly = (v) => {
-  if (!v) return '—';
-  const d = new Date(v);
-  if (isNaN(d)) return String(v);
-  return d.toLocaleDateString('en-IN', { dateStyle: 'medium' });
-};
-
 export const getStatusVariant = (value) => {
   if (!value) return 'default';
   const v = String(value).toLowerCase();
