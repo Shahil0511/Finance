@@ -462,6 +462,41 @@ async function exportStream(params, signal) {
   return db.queryStream(sql, params, signal);
 }
 
+/* Chart aggregates for the dashboard. GROUPING SETS computes the daily trend
+   and the channel/brand/payment/state breakdowns in ONE windowed scan instead
+   of five separate queries — same pruned CTEs and the same filter params as
+   summary(), so charts respond to the user's filters at summary cost.
+   gmask identifies the set: GROUPING(day, channel, brand, payment, state)
+   → day=15, channel=23, brand=27, payment=29, state=30. */
+async function analytics(params, signal) {
+  const sql = `
+    ${B2C_CTES}
+    SELECT
+      GROUPING(b2c.handover_time::date, b2c.sales_channel, b2c.brand,
+               b2c.payment_type, pin.state)                                    AS gmask,
+      b2c.handover_time::date                                                  AS day,
+      b2c.sales_channel,
+      b2c.brand,
+      b2c.payment_type,
+      pin.state,
+      COUNT(DISTINCT b2c.channel_parent_order_id)                              AS orders,
+      COALESCE(SUM(b2c.dispatched_quantity), 0)                                AS units,
+      COALESCE(SUM(b2c.unit_sale_price::numeric * b2c.dispatched_quantity), 0) AS revenue,
+      SUM(CASE WHEN b2c.sla_breached::text IN ('1','true','t','Y','yes','YES')
+          THEN 1 ELSE 0 END)                                                    AS sla_breached
+    ${SALES_FROM}
+    GROUP BY GROUPING SETS (
+      (b2c.handover_time::date),
+      (b2c.sales_channel),
+      (b2c.brand),
+      (b2c.payment_type),
+      (pin.state)
+    )
+    ORDER BY gmask, day
+  `;
+  return db.query(sql, params, signal);
+}
+
 async function tataCliqList(params, { sortBy, sortDir, pageLimit, offset, signal }) {
   const sql = `
     SELECT * FROM (${TATA_CLIQ_QUERY}) t1
@@ -541,6 +576,7 @@ module.exports = {
   TATA_CLIQ_EXPORT_COLS,
   list,
   summary,
+  analytics,
   filters,
   exportStream,
   tataCliqList,

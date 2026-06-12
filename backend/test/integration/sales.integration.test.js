@@ -87,6 +87,25 @@ if (!TEST_DATABASE_URL) {
     assert.ok(rows.every((r) => r.sales_channel === "MYNTRA"));
   });
 
+  test("analytics: one GROUPING SETS scan yields every chart bucket", async () => {
+    const rows = await salesRepo.analytics(MYNTRA);
+    const service = require("../../services/salesService");
+    const shaped = await service.getAnalytics({ dateFrom: W.from, dateTo: W.to, salesChannel: "MYNTRA" });
+
+    // Daily trend: all three seeded rows land on the same day.
+    assert.equal(shaped.daily.length, 1);
+    assert.equal(shaped.daily[0].orders, 2);       // distinct parents P1, P2
+    assert.equal(shaped.daily[0].units, 6);        // 3 + 1 + 2
+    assert.equal(shaped.daily[0].revenue, 600);    // price × qty
+
+    // Channel / payment / brand / state breakdowns from the same scan.
+    assert.deepEqual(shaped.byChannel.map((c) => [c.key, c.revenue]), [["MYNTRA", 600]]);
+    assert.deepEqual(shaped.byPayment.map((p) => [p.key, p.revenue]), [["PREPAID", 400], ["COD", 200]]);
+    assert.deepEqual(shaped.byBrand.map((b) => [b.key, b.revenue]), [["BrandA", 400], ["BrandB", 200]]);
+    assert.deepEqual(shaped.byState.map((s) => [s.key, s.revenue]), [["DL", 400], ["MH", 200]]);
+    assert.ok(rows.length >= 7); // raw grouping rows: 1 day + 1 channel + 2 brands + 2 payments + 2 states
+  });
+
   test("filters: distinct option lists are populated", async () => {
     const f = await salesRepo.filters([W.from, W.to]);
     assert.ok(f.salesChannels.includes("MYNTRA"));

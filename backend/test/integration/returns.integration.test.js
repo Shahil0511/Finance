@@ -93,6 +93,18 @@ if (!TEST_DATABASE_URL) {
     assert.ok(f.salesChannels.includes("myntra-omni"));
   });
 
+  test("analytics: chart buckets match the strict population", async () => {
+    const service = require("../../services/returnsService");
+    const shaped = await service.getAnalytics({ dateFrom: W.from, dateTo: W.to });
+
+    assert.equal(shaped.daily.length, 1);
+    assert.equal(shaped.daily[0].returns, 1);   // RA only
+    assert.equal(shaped.daily[0].value, 100);
+    assert.deepEqual(shaped.byChannel.map((c) => [c.key, c.returns]), [["flipkart", 1]]);
+    assert.deepEqual(shaped.byStatus.map((s) => [s.key, s.returns]), [["RETURN_COMPLETED", 1]]);
+    assert.deepEqual(shaped.byBrand.map((b) => [b.key, b.returns]), [["BrandA", 1]]);
+  });
+
   // B2: the returns export (the largest query) streams via a pg cursor.
   test("exportStream: streams the strict export population", async () => {
     const stream = await returnsRepo.exportStream(RET);

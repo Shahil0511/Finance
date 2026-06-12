@@ -27,6 +27,12 @@ async function filters(req, res) {
   res.json(result);
 }
 
+async function analytics(req, res) {
+  res.locals.dbQueries = 1;
+  const result = await returnsService.getAnalytics(req.validatedQuery, req.requestSignal);
+  res.json(result);
+}
+
 async function exportReport(req, res) {
   res.locals.dbQueries = 1;
   const stream = await returnsService.exportStream(req.validatedQuery, req.requestSignal);
@@ -91,6 +97,7 @@ module.exports = {
   list,
   summary,
   filters,
+  analytics,
   exportReport,
   pastReturnExportReport,
   omniList,

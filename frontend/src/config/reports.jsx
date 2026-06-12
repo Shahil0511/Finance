@@ -3,8 +3,8 @@ import {
 } from 'lucide-react';
 import Badge from '../components/ui/Badge';
 import { formatCurrency, formatDate, formatNumber, getSLAVariant, getStatusVariant } from '../utils/formatters';
-import { salesApi, useGetSalesFiltersQuery, useGetSalesListQuery, useGetSalesSummaryQuery, useGetTataCliqSalesFiltersQuery, useGetTataCliqSalesListQuery, useGetTataCliqSalesSummaryQuery } from '../features/sales/salesApi';
-import { returnsApi, useGetMyntraOmniReturnsFiltersQuery, useGetMyntraOmniReturnsListQuery, useGetMyntraOmniReturnsSummaryQuery, useGetReturnsFiltersQuery, useGetReturnsListQuery, useGetReturnsSummaryQuery, useGetTataCliqReturnsFiltersQuery, useGetTataCliqReturnsListQuery, useGetTataCliqReturnsSummaryQuery } from '../features/returns/returnsApi';
+import { salesApi, useGetSalesAnalyticsQuery, useGetSalesFiltersQuery, useGetSalesListQuery, useGetSalesSummaryQuery, useGetTataCliqSalesFiltersQuery, useGetTataCliqSalesListQuery, useGetTataCliqSalesSummaryQuery } from '../features/sales/salesApi';
+import { returnsApi, useGetMyntraOmniReturnsFiltersQuery, useGetMyntraOmniReturnsListQuery, useGetMyntraOmniReturnsSummaryQuery, useGetReturnsAnalyticsQuery, useGetReturnsFiltersQuery, useGetReturnsListQuery, useGetReturnsSummaryQuery, useGetTataCliqReturnsFiltersQuery, useGetTataCliqReturnsListQuery, useGetTataCliqReturnsSummaryQuery } from '../features/returns/returnsApi';
 import {
   useMyntraOmniReturnsFilterStore, useReturnsFilterStore, useSalesFilterStore,
   useTataCliqReturnsFilterStore, useTataCliqSalesFilterStore,
@@ -135,6 +135,8 @@ export const REPORTS = [
     invalidate: () => salesApi.util.invalidateTags(['Sales']),
     store: useSalesFilterStore,
     api: { useList: useGetSalesListQuery, useSummary: useGetSalesSummaryQuery, useFilters: useGetSalesFiltersQuery },
+    analytics: useGetSalesAnalyticsQuery,
+    charts: 'sales',
     cards: salesCards('Total Orders'),
     columns: SALES_COLUMNS,
     filters: {
@@ -197,6 +199,8 @@ export const REPORTS = [
     invalidate: () => returnsApi.util.invalidateTags(['Returns']),
     store: useReturnsFilterStore,
     api: { useList: useGetReturnsListQuery, useSummary: useGetReturnsSummaryQuery, useFilters: useGetReturnsFiltersQuery },
+    analytics: useGetReturnsAnalyticsQuery,
+    charts: 'returns',
     cards: returnCards('Total Returns'),
     columns: RETURN_COLUMNS,
     filters: {

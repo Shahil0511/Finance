@@ -1,12 +1,27 @@
+import { Suspense, lazy } from 'react';
 import { useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import Button from '../components/ui/Button';
+import { Skeleton } from '../components/ui/Skeleton';
 import FiltersPanel from '../components/reports/FiltersPanel';
 import SummaryCards from '../components/reports/SummaryCards';
 import ReportTable from '../components/reports/ReportTable';
 import { cn } from '../lib/cn';
+
+// recharts is heavy — split the charts section into its own lazy chunk so the
+// initial bundle stays lean and charts stream in after first paint.
+const ChartsPanel = lazy(() => import('../components/reports/ChartsPanel'));
+
+function ChartsFallback() {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-3" aria-hidden="true">
+      <Skeleton className="h-80 rounded-xl lg:col-span-2" />
+      <Skeleton className="h-80 rounded-xl" />
+    </div>
+  );
+}
 
 const EYEBROWS = {
   primary: 'text-primary',
@@ -45,6 +60,11 @@ export default function ReportPage({ report }) {
 
         <SummaryCards report={report} />
         <FiltersPanel report={report} />
+        {report.analytics && (
+          <Suspense fallback={<ChartsFallback />}>
+            <ChartsPanel report={report} />
+          </Suspense>
+        )}
         <ReportTable report={report} />
       </motion.div>
     </Layout>

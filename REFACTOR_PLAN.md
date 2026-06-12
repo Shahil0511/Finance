@@ -166,6 +166,11 @@ Fixes (all app-side; verified by EXPLAIN + real timed runs):
 - [ ] Tata Cliq returns still ~15s: `b2c_non_split` lacks an index on the sp1 join keys — DDL for the DBA in `scripts/recommended-indexes.sql` (expected ~2-3s after).
 - [ ] Ops follow-up: production `.env` needs the new TTLs (`CACHE_TTL_DATA=300, CACHE_TTL_SUMMARY=600, CACHE_TTL_FILTERS=3600, DB_WORK_MEM=256MB`) + an actually-reachable `REDIS_URL`, then restart.
 
+### Analytics — chart APIs + dashboard charts — ✅ SHIPPED 2026-06-12
+- [x] `GET /api/sales/analytics` + `GET /api/returns/analytics`: **one GROUPING SETS query per report** computes the daily trend and channel/brand/payment/state (sales) or channel/status/brand (returns) breakdowns in a single windowed+pruned scan — same filter params as summary, validated + Redis-cached (600s). Measured cold on production: sales 6.2s, returns 0.6s; warm hits are cache-instant.
+- [x] Frontend: `ChartsPanel` (registry-driven via `report.analytics`/`report.charts`) renders revenue/orders trend, channel + payment donuts, top-brands/states bars (sales) and returns trend/channel/status/brands (returns) with theme-aware recharts, loading skeletons + per-chart empty states. recharts is **code-split** into a lazy chunk (main bundle unchanged at ~451 kB; charts chunk 108 kB gz streams in after first paint).
+- [x] Covered by integration tests (bucket values asserted against seeds) + an HTTP E2E test.
+
 ### Phase 5 — DB performance (DBA-owned; already scoped in PERFORMANCE_NOTES.md)
 - [ ] Pursue index/materialized-view recommendations for the heavy report joins; move large exports to an async job flow. Track separately — needs DBA access, not app changes.
 

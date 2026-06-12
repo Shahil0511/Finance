@@ -120,6 +120,18 @@ if (!TEST_DATABASE_URL) {
     assert.match(lines[0], /^warehouse_name,/);
   });
 
+  test("GET /api/sales/analytics returns chart buckets over HTTP", async () => {
+    const res = await fetch(
+      `${BASE}/api/sales/analytics?dateFrom=2000-01-01&dateTo=2100-01-01&salesChannel=MYNTRA`,
+    );
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.daily.length, 1);
+    assert.equal(Number(body.daily[0].revenue), 600);
+    assert.equal(body.byChannel[0].key, "MYNTRA");
+    assert.equal(body.byPayment.length, 2); // PREPAID + COD
+  });
+
   test("invalid date param returns a 400 with the public message", async () => {
     const res = await fetch(`${BASE}/api/sales/summary?dateFrom=junk`);
     assert.equal(res.status, 400);

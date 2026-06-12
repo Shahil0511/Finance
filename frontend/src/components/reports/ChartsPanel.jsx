@@ -1,0 +1,202 @@
+import { motion } from 'framer-motion';
+import {
+  Area, Bar, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from 'recharts';
+import ChartCard from '../ui/ChartCard';
+import ErrorCard from '../ui/ErrorCard';
+import { cleanParams } from '../../store/useFilterStore';
+import { useThemeStore } from '../../store/useThemeStore';
+import { formatCompact, formatCurrency, formatNumber } from '../../utils/formatters';
+
+const PALETTE = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#06b6d4', '#f43f5e', '#84cc16', '#ec4899', '#14b8a6', '#f97316'];
+
+const dayTick = (d) =>
+  new Date(`${d}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+
+/** Theme-aware axis/grid colors (SVG attrs can't resolve CSS variables). */
+function useChartTheme() {
+  const isDark = useThemeStore((s) => s.theme) === 'dark';
+  return {
+    tick: { fill: isDark ? '#8b9bb3' : '#64748b', fontSize: 11 },
+    grid: isDark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.16)',
+  };
+}
+
+/** Tooltip rendered as HTML so it themes via the design tokens. */
+function ChartTip({ active, payload, label, labelFormatter }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-pop">
+      {label != null && (
+        <p className="mb-1 font-semibold text-card-foreground">
+          {labelFormatter ? labelFormatter(label) : label}
+        </p>
+      )}
+      {payload.map((p) => (
+        <p key={p.dataKey ?? p.name} className="flex items-center gap-1.5 text-muted-foreground">
+          <span className="inline-block size-2 rounded-full" style={{ background: p.color || p.payload?.fill }} aria-hidden="true" />
+          {p.name}: <span className="font-medium tabular-nums text-card-foreground">{p.formatter ? p.formatter(p.value) : formatNumber(p.value)}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function Donut({ data, dataKey, nameKey = 'key', formatter }) {
+  const total = data.reduce((s, d) => s + d[dataKey], 0);
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie data={data} dataKey={dataKey} nameKey={nameKey} innerRadius="55%" outerRadius="80%" paddingAngle={2} strokeWidth={0}>
+          {data.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+        </Pie>
+        <Tooltip content={<ChartTip />} formatter={(v, n) => [
+          `${formatter ? formatter(v) : formatNumber(v)} (${total ? Math.round((v / total) * 100) : 0}%)`, n,
+        ]} />
+        <Legend
+          verticalAlign="bottom"
+          iconType="circle"
+          iconSize={8}
+          formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
+        />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
+function HBars({ data, dataKey, color, formatter, theme }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={data} layout="vertical" margin={{ left: 8, right: 12, top: 4, bottom: 4 }}>
+        <CartesianGrid horizontal={false} stroke={theme.grid} />
+        <XAxis type="number" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} />
+        <YAxis type="category" dataKey="key" width={104} tick={theme.tick} axisLine={false} tickLine={false} />
+        <Tooltip content={<ChartTip />} formatter={(v, n) => [formatter ? formatter(v) : formatNumber(v), n]} cursor={{ fill: theme.grid }} />
+        <Bar dataKey={dataKey} name={dataKey} fill={color} radius={[0, 6, 6, 0]} maxBarSize={18} />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
+
+function SalesCharts({ data, loading, theme }) {
+  const daily = data?.daily ?? [];
+  const byChannel = data?.byChannel ?? [];
+  const byBrand = data?.byBrand ?? [];
+  const byPayment = data?.byPayment ?? [];
+  const byState = data?.byState ?? [];
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-3">
+      <ChartCard title="Revenue & Orders Trend" subtitle="Daily over the selected window" loading={loading} empty={!daily.length} className="lg:col-span-2" index={0}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={daily} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+            <defs>
+              <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke={theme.grid} />
+            <XAxis dataKey="day" tick={theme.tick} tickFormatter={dayTick} axisLine={false} tickLine={false} />
+            <YAxis yAxisId="rev" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={52} />
+            <YAxis yAxisId="ord" orientation="right" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={44} />
+            <Tooltip
+              content={<ChartTip labelFormatter={dayTick} />}
+              formatter={(v, n) => [n === 'Revenue' ? formatCurrency(v) : formatNumber(v), n]}
+            />
+            <Area yAxisId="rev" type="monotone" dataKey="revenue" name="Revenue" stroke="#3b82f6" strokeWidth={2} fill="url(#rev)" />
+            <Line yAxisId="ord" type="monotone" dataKey="orders" name="Orders" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Channel Share" subtitle="Revenue by sales channel" loading={loading} empty={!byChannel.length} index={1}>
+        <Donut data={byChannel} dataKey="revenue" formatter={formatCurrency} />
+      </ChartCard>
+
+      <ChartCard title="Top Brands" subtitle="By revenue" loading={loading} empty={!byBrand.length} index={2}>
+        <HBars data={byBrand.slice(0, 8)} dataKey="revenue" color="#8b5cf6" formatter={formatCurrency} theme={theme} />
+      </ChartCard>
+
+      <ChartCard title="Payment Mix" subtitle="Prepaid vs COD revenue" loading={loading} empty={!byPayment.length} index={3}>
+        <Donut data={byPayment} dataKey="revenue" formatter={formatCurrency} />
+      </ChartCard>
+
+      <ChartCard title="Top States" subtitle="By revenue" loading={loading} empty={!byState.length} index={4}>
+        <HBars data={byState.slice(0, 8)} dataKey="revenue" color="#10b981" formatter={formatCurrency} theme={theme} />
+      </ChartCard>
+    </div>
+  );
+}
+
+function ReturnsCharts({ data, loading, theme }) {
+  const daily = data?.daily ?? [];
+  const byChannel = data?.byChannel ?? [];
+  const byStatus = data?.byStatus ?? [];
+  const byBrand = data?.byBrand ?? [];
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-3">
+      <ChartCard title="Returns Trend" subtitle="Daily count and forward value" loading={loading} empty={!daily.length} className="lg:col-span-2" index={0}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={daily} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke={theme.grid} />
+            <XAxis dataKey="day" tick={theme.tick} tickFormatter={dayTick} axisLine={false} tickLine={false} />
+            <YAxis yAxisId="cnt" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={44} />
+            <YAxis yAxisId="val" orientation="right" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={52} />
+            <Tooltip
+              content={<ChartTip labelFormatter={dayTick} />}
+              formatter={(v, n) => [n === 'Value' ? formatCurrency(v) : formatNumber(v), n]}
+            />
+            <Bar yAxisId="cnt" dataKey="returns" name="Returns" fill="#8b5cf6" radius={[6, 6, 0, 0]} maxBarSize={26} />
+            <Line yAxisId="val" type="monotone" dataKey="value" name="Value" stroke="#f43f5e" strokeWidth={2} dot={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Returns by Channel" subtitle="Share of return count" loading={loading} empty={!byChannel.length} index={1}>
+        <Donut data={byChannel} dataKey="returns" />
+      </ChartCard>
+
+      <ChartCard title="Return Status" subtitle="Count by status" loading={loading} empty={!byStatus.length} index={2} className="lg:col-span-2">
+        <HBars data={byStatus.slice(0, 8)} dataKey="returns" color="#06b6d4" theme={theme} />
+      </ChartCard>
+
+      <ChartCard title="Most Returned Brands" subtitle="By return count" loading={loading} empty={!byBrand.length} index={3}>
+        <HBars data={byBrand.slice(0, 8)} dataKey="returns" color="#f59e0b" theme={theme} />
+      </ChartCard>
+    </div>
+  );
+}
+
+/** Config-driven charts section — powered by one GROUPING SETS query per report
+    (report.analytics hook), sharing the page's applied filters. */
+export default function ChartsPanel({ report }) {
+  const { filters } = report.store();
+  const { analytics: useAnalytics } = report;
+  const { data, isLoading, isFetching, isError, error, refetch } = useAnalytics(cleanParams(filters));
+  const theme = useChartTheme();
+
+  if (isError) {
+    return <ErrorCard compact message={error?.data?.detail || 'Could not load charts'} onRetry={refetch} />;
+  }
+
+  const Charts = report.charts === 'returns' ? ReturnsCharts : SalesCharts;
+
+  return (
+    <section aria-label={`${report.title} charts`} className="relative">
+      {isFetching && !isLoading && (
+        <div className="absolute -top-2 left-0 right-0 z-10 h-0.5 overflow-hidden rounded-full" aria-hidden="true">
+          <motion.div
+            className="h-full bg-primary"
+            style={{ width: '45%' }}
+            animate={{ x: ['-120%', '260%'] }}
+            transition={{ duration: 1.9, repeat: Infinity, ease: [0.4, 0, 0.6, 1] }}
+          />
+        </div>
+      )}
+      <Charts data={data} loading={isLoading} theme={theme} />
+    </section>
+  );
+}

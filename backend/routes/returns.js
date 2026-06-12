@@ -20,6 +20,16 @@ const cacheKey = (name) => (req) =>
   `${name}:${hashParams(req.validatedQuery || req.query)}`;
 
 router.get(
+  "/analytics",
+  validateReturnsQuery,
+  cacheMiddleware({
+    keyFn: cacheKey("returns_analytics"),
+    ttl: appConfig.cacheTtl.summary,
+  }),
+  asyncHandler(returnsController.analytics),
+);
+
+router.get(
   "/tata-cliq",
   validateReturnsQuery,
   cacheMiddleware({

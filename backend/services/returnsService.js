@@ -1,7 +1,7 @@
 "use strict";
 
 const returnsRepository = require("../repositories/returnsRepository");
-const { businessWindow } = require("../utils/dateRange");
+const { businessWindow, toDateString } = require("../utils/dateRange");
 const { normalizePagination, buildHasMoreResult } = require("../utils/pagination");
 
 // The window is clamped here (not in SQL) so the repository receives plain
@@ -71,6 +71,31 @@ async function getFilters(signal) {
   const { from, to } = businessWindow(); // current business window
   const data = await returnsRepository.filters([from, to], signal);
   return withExecutionTime(startedAt, data);
+}
+
+/* Shapes the GROUPING SETS result into chart buckets (see repository). */
+async function getAnalytics(query, signal) {
+  const startedAt = Date.now();
+  const rows = await returnsRepository.analytics(buildParams(query), signal);
+
+  const daily = [], byChannel = [], byStatus = [], byBrand = [];
+  for (const r of rows) {
+    const m = { returns: Number(r.returns), value: Number(r.value) };
+    switch (Number(r.gmask)) {
+      case 7:  if (r.day)                 daily.push({ day: toDateString(r.day), ...m }); break;
+      case 11: if (r.sales_channel)       byChannel.push({ key: r.sales_channel, ...m }); break;
+      case 13: if (r.return_order_status) byStatus.push({ key: r.return_order_status, ...m }); break;
+      case 14: if (r.brand)               byBrand.push({ key: r.brand, ...m }); break;
+    }
+  }
+
+  const byCount = (a, b) => b.returns - a.returns;
+  return withExecutionTime(startedAt, {
+    daily, // day-ordered by the SQL
+    byChannel: byChannel.sort(byCount),
+    byStatus: byStatus.sort(byCount),
+    byBrand: byBrand.sort(byCount).slice(0, 10),
+  });
 }
 
 // Row streams (REFACTOR_PLAN.md B2) — controllers pipe these to the response
@@ -152,6 +177,7 @@ module.exports = {
   buildTataCliqParams,
   getList,
   getSummary,
+  getAnalytics,
   getFilters,
   exportStream,
   exportPastReturnStream,

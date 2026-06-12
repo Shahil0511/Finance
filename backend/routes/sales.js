@@ -84,6 +84,16 @@ router.get(
 );
 
 router.get(
+  "/analytics",
+  validateSalesQuery,
+  cacheMiddleware({
+    keyFn: cacheKey("sales_analytics"),
+    ttl: appConfig.cacheTtl.summary,
+  }),
+  asyncHandler(salesController.analytics),
+);
+
+router.get(
   "/export",
   validateSalesQuery,
   asyncHandler(salesController.exportReport),

@@ -26,6 +26,11 @@ export const salesApi = createApi({
       query: () => '/filters',
       keepUnusedDataFor: 300,
     }),
+    getSalesAnalytics: b.query({
+      query: (params) => ({ url: '/analytics', params }),
+      providesTags: ['Sales'],
+      keepUnusedDataFor: 300,
+    }),
     getTataCliqSalesList: b.query({
       query: (params) => ({ url: '/tata-cliq', params }),
       providesTags: ['Sales'],
@@ -47,6 +52,7 @@ export const {
   useGetSalesListQuery,
   useGetSalesSummaryQuery,
   useGetSalesFiltersQuery,
+  useGetSalesAnalyticsQuery,
   useGetTataCliqSalesListQuery,
   useGetTataCliqSalesSummaryQuery,
   useGetTataCliqSalesFiltersQuery,

@@ -965,6 +965,43 @@ async function filters(params, signal) {
   };
 }
 
+/* Chart aggregates for the returns dashboard — one windowed scan via
+   GROUPING SETS (same population + filters as summary()).
+   gmask: GROUPING(day, channel, status, brand) → day=7, channel=11,
+   status=13, brand=14. */
+async function analytics(params, signal) {
+  const sql = `
+    ${RETURN_DETAIL_BASE_CTE}
+    SELECT
+      GROUPING(rb.return_order_processed_time::date, rb.sales_channel,
+               rb.return_order_status, rb.brand)                 AS gmask,
+      rb.return_order_processed_time::date                       AS day,
+      rb.sales_channel,
+      rb.return_order_status,
+      rb.brand,
+      COUNT(*)                                                   AS returns,
+      COALESCE(SUM(rb.forward_order_value::numeric), 0)          AS value
+    FROM returns_base rb
+    WHERE rb.rw = 1
+      AND ($3::text IS NULL OR rb.sales_channel               = $3)
+      AND ($4::text IS NULL OR rb.return_order_status         = $4)
+      AND ($5::text IS NULL OR rb.return_order_item_qc_status = $5)
+      AND ($6::text IS NULL OR
+           rb.channel_order_id::text     ILIKE $6 OR
+           rb.client_sku_id_ean          ILIKE $6 OR
+           rb.brand                      ILIKE $6 OR
+           rb.return_order_item_id::text ILIKE $6)
+    GROUP BY GROUPING SETS (
+      (rb.return_order_processed_time::date),
+      (rb.sales_channel),
+      (rb.return_order_status),
+      (rb.brand)
+    )
+    ORDER BY gmask, day
+  `;
+  return db.query(sql, params, signal);
+}
+
 async function exportStream(params, signal) {
   const sql = `
     SELECT * FROM (${RETURN_EXPORT_QUERY}) t1
@@ -1075,6 +1112,7 @@ module.exports = {
   TATA_CLIQ_EXPORT_COLS,
   list,
   summary,
+  analytics,
   filters,
   exportStream,
   pastReturnExportStream,

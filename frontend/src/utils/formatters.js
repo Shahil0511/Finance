@@ -12,6 +12,17 @@ export const formatNumber = (v) => {
   return Number(v).toLocaleString('en-IN');
 };
 
+/** Compact Indian-system number for chart axes: 1.2Cr / 3.4L / 12k. */
+export const formatCompact = (v) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '';
+  const abs = Math.abs(n);
+  if (abs >= 1e7) return `${(n / 1e7).toFixed(1)}Cr`;
+  if (abs >= 1e5) return `${(n / 1e5).toFixed(1)}L`;
+  if (abs >= 1e3) return `${(n / 1e3).toFixed(0)}k`;
+  return String(Math.round(n));
+};
+
 export const formatDate = (v) => {
   if (!v) return '—';
   const d = new Date(v);

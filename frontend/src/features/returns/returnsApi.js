@@ -26,6 +26,11 @@ export const returnsApi = createApi({
       query: () => '/filters',
       keepUnusedDataFor: 300,
     }),
+    getReturnsAnalytics: b.query({
+      query: (params) => ({ url: '/analytics', params }),
+      providesTags: ['Returns'],
+      keepUnusedDataFor: 300,
+    }),
     getMyntraOmniReturnsList: b.query({
       query: (params) => ({ url: '/omni', params }),
       providesTags: ['Returns'],
@@ -61,6 +66,7 @@ export const {
   useGetReturnsListQuery,
   useGetReturnsSummaryQuery,
   useGetReturnsFiltersQuery,
+  useGetReturnsAnalyticsQuery,
   useGetMyntraOmniReturnsListQuery,
   useGetMyntraOmniReturnsSummaryQuery,
   useGetMyntraOmniReturnsFiltersQuery,

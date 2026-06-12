@@ -27,6 +27,12 @@ async function filters(req, res) {
   res.json(result);
 }
 
+async function analytics(req, res) {
+  res.locals.dbQueries = 1;
+  const result = await salesService.getAnalytics(req.validatedQuery, req.requestSignal);
+  res.json(result);
+}
+
 async function exportReport(req, res) {
   res.locals.dbQueries = 1;
   const stream = await salesService.exportStream(req.validatedQuery, req.requestSignal);
@@ -61,6 +67,7 @@ module.exports = {
   list,
   summary,
   filters,
+  analytics,
   exportReport,
   tataCliqList,
   tataCliqSummary,

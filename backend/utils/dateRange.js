@@ -60,10 +60,16 @@ function businessWindow(dateFrom, dateTo) {
   return { from, to }; // from >= to yields an empty range, same as the old SQL clamp
 }
 
+/** Formats a JS Date (or passes through a string) as YYYY-MM-DD. */
+function toDateString(value) {
+  return value instanceof Date ? formatDate(value) : value;
+}
+
 module.exports = {
   defaultDates,
   exclusiveEndDate,
   todayString,
   diffDaysInclusive,
   businessWindow,
+  toDateString,
 };

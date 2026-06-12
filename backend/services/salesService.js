@@ -1,7 +1,7 @@
 "use strict";
 
 const salesRepository = require("../repositories/salesRepository");
-const { businessWindow } = require("../utils/dateRange");
+const { businessWindow, toDateString } = require("../utils/dateRange");
 const { normalizePagination, buildHasMoreResult } = require("../utils/pagination");
 
 // The window is clamped here (not in SQL) so the repository receives plain
@@ -69,6 +69,39 @@ async function getFilters(signal) {
   return withExecutionTime(startedAt, data);
 }
 
+/* Shapes the single GROUPING SETS result into chart-ready buckets.
+   gmask → which grouping set the row belongs to (see repository). */
+async function getAnalytics(query, signal) {
+  const startedAt = Date.now();
+  const rows = await salesRepository.analytics(buildParams(query), signal);
+
+  const daily = [], byChannel = [], byBrand = [], byPayment = [], byState = [];
+  for (const r of rows) {
+    const m = {
+      orders: Number(r.orders),
+      units: Number(r.units),
+      revenue: Number(r.revenue),
+      slaBreached: Number(r.sla_breached),
+    };
+    switch (Number(r.gmask)) {
+      case 15: if (r.day)           daily.push({ day: toDateString(r.day), ...m }); break;
+      case 23: if (r.sales_channel) byChannel.push({ key: r.sales_channel, ...m }); break;
+      case 27: if (r.brand)         byBrand.push({ key: r.brand, ...m }); break;
+      case 29: if (r.payment_type)  byPayment.push({ key: r.payment_type, ...m }); break;
+      case 30: if (r.state)         byState.push({ key: r.state, ...m }); break;
+    }
+  }
+
+  const byRevenue = (a, b) => b.revenue - a.revenue;
+  return withExecutionTime(startedAt, {
+    daily, // already day-ordered by the SQL
+    byChannel: byChannel.sort(byRevenue),
+    byBrand: byBrand.sort(byRevenue).slice(0, 10),
+    byPayment: byPayment.sort(byRevenue),
+    byState: byState.sort(byRevenue).slice(0, 10),
+  });
+}
+
 // Returns a row stream (REFACTOR_PLAN.md B2) — the controller pipes it to the
 // response as CSV instead of buffering the whole export in memory.
 function exportStream(query, signal) {
@@ -113,6 +146,7 @@ module.exports = {
   buildTataCliqParams,
   getList,
   getSummary,
+  getAnalytics,
   getFilters,
   exportStream,
   getTataCliqList,
