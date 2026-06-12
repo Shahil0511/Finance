@@ -71,13 +71,14 @@ export default function ReportPage({ report }) {
           </div>
         </div>
 
+        {/* Filters first — they drive every section below. */}
+        <FiltersPanel report={report} />
         <SummaryCards report={report} />
         {report.analytics && (
           <Suspense fallback={<ChartsFallback />}>
             <ChartsPanel report={report} />
           </Suspense>
         )}
-        <FiltersPanel report={report} />
         <ReportTable report={report} />
       </motion.div>
     </Layout>

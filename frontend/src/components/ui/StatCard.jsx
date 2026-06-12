@@ -2,23 +2,23 @@ import { motion } from 'framer-motion';
 import { cn } from '../../lib/cn';
 import { Skeleton } from './Skeleton';
 
-/* Thin tone accent on the left edge — classic finance-tile treatment. */
+/* Bright tone accent on the left edge + matching icon. */
 const ACCENTS = {
-  primary:     'before:bg-primary',
-  success:     'before:bg-success',
-  warning:     'before:bg-warning',
-  destructive: 'before:bg-destructive',
+  primary:     'before:bg-indigo-500',
+  success:     'before:bg-emerald-500',
+  warning:     'before:bg-amber-500',
+  destructive: 'before:bg-rose-500',
   violet:      'before:bg-violet-500',
-  cyan:        'before:bg-cyan-600',
+  cyan:        'before:bg-cyan-500',
 };
 
 const ICONS = {
-  primary:     'text-primary',
-  success:     'text-success',
-  warning:     'text-warning',
-  destructive: 'text-destructive',
+  primary:     'text-indigo-500',
+  success:     'text-emerald-500',
+  warning:     'text-amber-500',
+  destructive: 'text-rose-500',
   violet:      'text-violet-500',
-  cyan:        'text-cyan-600',
+  cyan:        'text-cyan-500',
 };
 
 /** Enterprise KPI tile: uppercase label, tabular value, muted icon, flat card. */

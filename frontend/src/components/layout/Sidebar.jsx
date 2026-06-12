@@ -13,7 +13,7 @@ const SIDEBAR = {
   bg: 'bg-[#17171a]',
   border: 'border-[#26262b]',
   item: 'text-[#9b9ba3] hover:bg-white/[0.05] hover:text-[#e4e4e8]',
-  itemActive: 'bg-white/[0.07] text-white',
+  itemActive: 'text-white',
   label: 'text-[#5d5d66]',
   metaTitle: 'text-[#8a8a93]',
   meta: 'text-[#5d5d66]',
@@ -28,7 +28,7 @@ const GROUPS = [...new Set(REPORTS.map((r) => r.group))].map((group) => ({
 function Brand() {
   return (
     <div className="flex items-center gap-3">
-      <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#26262b] ring-1 ring-white/10">
+      <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-gradient-to-br from-indigo-500 to-violet-600 shadow-md shadow-indigo-500/30 ring-1 ring-white/15">
         <img src={`${APP_BASE_PATH}/libas_animated_favicon.gif`} alt="" className="size-full object-cover" />
       </span>
       <span className="flex min-w-0 flex-col leading-tight">
@@ -66,14 +66,14 @@ function NavItems() {
                   <>
                     {isActive && (
                       <motion.span
-                        layoutId="sidebar-active-bar"
-                        className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-primary"
+                        layoutId="sidebar-active-pill"
+                        className="absolute inset-0 rounded-md bg-gradient-to-r from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/30"
                         transition={{ type: 'spring', stiffness: 480, damping: 40 }}
                         aria-hidden="true"
                       />
                     )}
-                    <Icon className="size-4 shrink-0" aria-hidden="true" />
-                    <span className="truncate">{title.replace(' Report', '')}</span>
+                    <Icon className="relative z-10 size-4 shrink-0" aria-hidden="true" />
+                    <span className="relative z-10 truncate">{title.replace(' Report', '')}</span>
                   </>
                 )}
               </NavLink>

@@ -16,7 +16,9 @@ export default function ChartCard({ title, subtitle, stat, loading = false, empt
         )}
       </div>
 
-      <div className="h-64 min-w-0 flex-1 p-3">
+      {/* Fixed height, NOT flex-1: in an auto-height flex column, flex-basis:0
+          overrides the height and collapses the chart area to 0px. */}
+      <div className="h-64 min-w-0 p-3">
         {loading ? (
           <div className="flex h-full items-end gap-2 px-1 pb-1">
             {[55, 75, 45, 85, 60, 70, 40, 80].map((h, i) => (

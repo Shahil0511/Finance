@@ -12,8 +12,8 @@ import { formatCompact, formatCurrency, formatNumber } from '../../utils/formatt
 
 const sum = (rows, key) => rows.reduce((s, r) => s + (Number(r[key]) || 0), 0);
 
-/* Restrained enterprise palette — desaturated, finance-report tones. */
-const PALETTE = ['#4f6db8', '#7c6bb8', '#3a9188', '#c08a3e', '#5588a3', '#b85c5c', '#7da05a', '#a56a8f', '#508f7a', '#b07855'];
+/* Vivid product palette — bright, high-energy series colors. */
+const PALETTE = ['#6366f1', '#a855f7', '#10b981', '#f59e0b', '#06b6d4', '#f43f5e', '#84cc16', '#ec4899', '#14b8a6', '#f97316'];
 
 const dayTick = (d) =>
   new Date(`${d}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
@@ -140,8 +140,8 @@ function SalesCharts({ data, loading, theme }) {
           <ComposedChart data={daily} margin={{ left: 0, right: 8, top: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4f6db8" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="#4f6db8" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke={theme.grid} />
@@ -153,8 +153,8 @@ function SalesCharts({ data, loading, theme }) {
               formatter={(v, n) => [n === 'Revenue' ? formatCurrency(v) : formatNumber(v), n]}
             />
             {legend}
-            <Area yAxisId="rev" type="monotone" dataKey="revenue" name="Revenue" stroke="#4f6db8" strokeWidth={2} fill="url(#rev)" />
-            <Line yAxisId="ord" type="monotone" dataKey="orders" name="Orders" stroke="#7c6bb8" strokeWidth={2} dot={false} />
+            <Area yAxisId="rev" type="monotone" dataKey="revenue" name="Revenue" stroke="#6366f1" strokeWidth={2} fill="url(#rev)" />
+            <Line yAxisId="ord" type="monotone" dataKey="orders" name="Orders" stroke="#a855f7" strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -181,8 +181,8 @@ function SalesCharts({ data, loading, theme }) {
             <YAxis yAxisId="sla" orientation="right" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={40} />
             <Tooltip content={<ChartTip labelFormatter={dayTick} />} formatter={(v, n) => [formatNumber(v), n]} />
             {legend}
-            <Bar yAxisId="units" dataKey="units" name="Units" fill="#5588a3" radius={[6, 6, 0, 0]} maxBarSize={26} />
-            <Line yAxisId="sla" type="monotone" dataKey="slaBreached" name="SLA Breached" stroke="#b85c5c" strokeWidth={2} dot={false} />
+            <Bar yAxisId="units" dataKey="units" name="Units" fill="#06b6d4" radius={[6, 6, 0, 0]} maxBarSize={26} />
+            <Line yAxisId="sla" type="monotone" dataKey="slaBreached" name="SLA Breached" stroke="#f43f5e" strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -195,7 +195,7 @@ function SalesCharts({ data, loading, theme }) {
 
       {show(byBrand) && (
         <ChartCard title="Top Brands" subtitle="By revenue" loading={loading} index={4}>
-          <HBars data={byBrand.slice(0, 8)} dataKey="revenue" color="#7c6bb8" formatter={formatCurrency} theme={theme} />
+          <HBars data={byBrand.slice(0, 8)} dataKey="revenue" color="#a855f7" formatter={formatCurrency} theme={theme} />
         </ChartCard>
       )}
 
@@ -207,7 +207,7 @@ function SalesCharts({ data, loading, theme }) {
 
       {show(byState) && (
         <ChartCard title="Top States" subtitle="By revenue" loading={loading} index={6}>
-          <HBars data={byState.slice(0, 8)} dataKey="revenue" color="#3a9188" formatter={formatCurrency} theme={theme} />
+          <HBars data={byState.slice(0, 8)} dataKey="revenue" color="#10b981" formatter={formatCurrency} theme={theme} />
         </ChartCard>
       )}
     </div>
@@ -267,8 +267,8 @@ function ReturnsCharts({ data, loading, theme }) {
               formatter={(v, n) => [n === 'Value' ? formatCurrency(v) : formatNumber(v), n]}
             />
             {legend}
-            <Bar yAxisId="cnt" dataKey="returns" name="Returns" fill="#7c6bb8" radius={[6, 6, 0, 0]} maxBarSize={26} />
-            <Line yAxisId="val" type="monotone" dataKey="value" name="Value" stroke="#b85c5c" strokeWidth={2} dot={false} />
+            <Bar yAxisId="cnt" dataKey="returns" name="Returns" fill="#a855f7" radius={[6, 6, 0, 0]} maxBarSize={26} />
+            <Line yAxisId="val" type="monotone" dataKey="value" name="Value" stroke="#f43f5e" strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -281,7 +281,7 @@ function ReturnsCharts({ data, loading, theme }) {
 
       {show(byStatus) && (
         <ChartCard title="Return Status" subtitle="Count by status" loading={loading} index={2}>
-          <HBars data={byStatus.slice(0, 8)} dataKey="returns" color="#5588a3" theme={theme} />
+          <HBars data={byStatus.slice(0, 8)} dataKey="returns" color="#06b6d4" theme={theme} />
         </ChartCard>
       )}
 
@@ -301,14 +301,14 @@ function ReturnsCharts({ data, loading, theme }) {
             <XAxis dataKey="day" tick={theme.tick} tickFormatter={dayTick} axisLine={false} tickLine={false} />
             <YAxis tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={48} />
             <Tooltip content={<ChartTip labelFormatter={dayTick} />} formatter={(v) => [formatCurrency(v), 'Avg value']} />
-            <Line type="monotone" dataKey="avg" name="Avg value" stroke="#3a9188" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="avg" name="Avg value" stroke="#10b981" strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
 
       {show(byBrand) && (
         <ChartCard title="Most Returned Brands" subtitle="By return count" loading={loading} index={4}>
-          <HBars data={byBrand.slice(0, 8)} dataKey="returns" color="#c08a3e" theme={theme} />
+          <HBars data={byBrand.slice(0, 8)} dataKey="returns" color="#f59e0b" theme={theme} />
         </ChartCard>
       )}
     </div>

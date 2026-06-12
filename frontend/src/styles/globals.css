@@ -7,34 +7,35 @@
    Neutral surfaces (zinc family — NOT blue-tinted), hairline borders over
    shadows, one restrained action accent. Components reference only these.  */
 :root {
-  --background:             hsl(220 14% 96%);
-  --foreground:             hsl(224 15% 12%);
+  --background:             hsl(240 30% 98%);
+  --foreground:             hsl(234 16% 14%);
 
   --card:                   hsl(0 0% 100%);
-  --card-foreground:        hsl(224 15% 12%);
+  --card-foreground:        hsl(234 16% 14%);
 
-  --muted:                  hsl(220 13% 93%);
-  --muted-foreground:       hsl(220 8% 42%);
+  --muted:                  hsl(240 18% 94%);
+  --muted-foreground:       hsl(234 8% 44%);
 
-  --accent:                 hsl(220 13% 93%);
-  --accent-foreground:      hsl(224 15% 12%);
+  --accent:                 hsl(240 24% 94%);
+  --accent-foreground:      hsl(234 16% 14%);
 
-  --border:                 hsl(220 12% 88%);
-  --input:                  hsl(220 12% 82%);
+  --border:                 hsl(236 16% 88%);
+  --input:                  hsl(236 16% 82%);
 
-  --primary:                hsl(222 65% 45%);
+  /* Vivid indigo accent — bright, current-gen product feel. */
+  --primary:                hsl(243 75% 59%);
   --primary-foreground:     hsl(0 0% 100%);
 
-  --destructive:            hsl(0 65% 47%);
+  --destructive:            hsl(350 89% 60%);
   --destructive-foreground: hsl(0 0% 100%);
 
-  --success:                hsl(158 70% 30%);
+  --success:                hsl(160 84% 39%);
   --success-foreground:     hsl(0 0% 100%);
 
-  --warning:                hsl(34 90% 40%);
-  --warning-foreground:     hsl(0 0% 100%);
+  --warning:                hsl(38 92% 50%);
+  --warning-foreground:     hsl(26 83% 14%);
 
-  --ring:                   hsl(222 65% 45%);
+  --ring:                   hsl(243 75% 59%);
 }
 
 /* Dark theme: neutral charcoal (240 hue, 4-6% saturation) — no blue cast. */
@@ -54,19 +55,19 @@
   --border:                 hsl(240 5% 17%);
   --input:                  hsl(240 5% 23%);
 
-  --primary:                hsl(220 75% 58%);
-  --primary-foreground:     hsl(0 0% 100%);
+  --primary:                hsl(239 84% 70%);
+  --primary-foreground:     hsl(240 30% 8%);
 
-  --destructive:            hsl(0 72% 56%);
+  --destructive:            hsl(350 89% 62%);
   --destructive-foreground: hsl(0 0% 100%);
 
-  --success:                hsl(158 55% 42%);
-  --success-foreground:     hsl(0 0% 100%);
+  --success:                hsl(158 64% 50%);
+  --success-foreground:     hsl(160 80% 8%);
 
-  --warning:                hsl(38 85% 50%);
+  --warning:                hsl(43 96% 56%);
   --warning-foreground:     hsl(26 80% 12%);
 
-  --ring:                   hsl(220 75% 58%);
+  --ring:                   hsl(239 84% 70%);
 }
 
 /* Map tokens into Tailwind utility namespaces (bg-*, text-*, border-*, …). */
