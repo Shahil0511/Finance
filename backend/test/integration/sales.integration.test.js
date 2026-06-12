@@ -29,12 +29,15 @@ if (!TEST_DATABASE_URL) {
   const { Client } = require("pg");
   const db = require("../../db/postgres");
   const salesRepo = require("../../repositories/salesRepository");
+  const { businessWindow } = require("../../utils/dateRange");
 
   const read = (f) => fs.readFileSync(path.join(__dirname, f), "utf8");
 
-  // No-filter query params $1..$10. Wide dates let the in-SQL month window govern.
+  // No-filter query params $1..$10. The window is clamped in JS now (the
+  // service layer does this in production) — repos expect final dates.
   // [dateFrom, dateTo, salesChannel, category, orderStatus, warehouse, paymentType, search, state, brand]
-  const MYNTRA = ["2000-01-01", "2100-01-01", "MYNTRA", null, null, null, null, null, null, null];
+  const W = businessWindow();
+  const MYNTRA = [W.from, W.to, "MYNTRA", null, null, null, null, null, null, null];
   const LIST_OPTS = { sortBy: "handover_time", sortDir: "DESC", pageLimit: 51, offset: 0 };
 
   before(async () => {
@@ -85,7 +88,7 @@ if (!TEST_DATABASE_URL) {
   });
 
   test("filters: distinct option lists are populated", async () => {
-    const f = await salesRepo.filters();
+    const f = await salesRepo.filters([W.from, W.to]);
     assert.ok(f.salesChannels.includes("MYNTRA"));
     assert.ok(f.brands.includes("BrandA"));
     assert.ok(f.states.includes("DL"));

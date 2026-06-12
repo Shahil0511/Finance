@@ -26,13 +26,17 @@ if (!TEST_DATABASE_URL) {
   const { Client } = require("pg");
   const db = require("../../db/postgres");
   const returnsRepo = require("../../repositories/returnsRepository");
+  const { businessWindow } = require("../../utils/dateRange");
 
   const read = (f) => fs.readFileSync(path.join(__dirname, f), "utf8");
 
+  // The window is clamped in JS now (the service layer does this in
+  // production) — repos expect final dates.
+  const W = businessWindow();
   // Regular returns params $1..$6: [dateFrom, dateTo, salesChannel, returnStatus, qcStatus, search]
-  const RET = ["2000-01-01", "2100-01-01", null, null, null, null];
+  const RET = [W.from, W.to, null, null, null, null];
   // Omni params $1..$5: [dateFrom, dateTo, returnStatus, qcStatus, search]
-  const OMNI = ["2000-01-01", "2100-01-01", null, null, null];
+  const OMNI = [W.from, W.to, null, null, null];
   const SORT = { sortBy: "return_order_processed_time", sortDir: "DESC", pageLimit: 51, offset: 0 };
 
   before(async () => {
@@ -84,7 +88,7 @@ if (!TEST_DATABASE_URL) {
   });
 
   test("filters: distinct return channels include the seeded ones", async () => {
-    const f = await returnsRepo.filters();
+    const f = await returnsRepo.filters([W.from, W.to]);
     assert.ok(f.salesChannels.includes("flipkart"));
     assert.ok(f.salesChannels.includes("myntra-omni"));
   });

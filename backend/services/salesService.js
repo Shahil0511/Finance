@@ -1,14 +1,16 @@
 "use strict";
 
 const salesRepository = require("../repositories/salesRepository");
-const { defaultDates, exclusiveEndDate } = require("../utils/dateRange");
+const { businessWindow } = require("../utils/dateRange");
 const { normalizePagination, buildHasMoreResult } = require("../utils/pagination");
 
+// The window is clamped here (not in SQL) so the repository receives plain
+// constants and TimescaleDB can prune hypertable chunks — see businessWindow.
 function buildParams(q) {
-  const { dateFrom, dateTo } = defaultDates();
+  const { from, to } = businessWindow(q.dateFrom, q.dateTo);
   return [
-    q.dateFrom || dateFrom,
-    exclusiveEndDate(q.dateTo || dateTo),
+    from,
+    to,
     q.salesChannel || null,
     q.category || null,
     q.orderStatus || null,
@@ -21,10 +23,10 @@ function buildParams(q) {
 }
 
 function buildTataCliqParams(q) {
-  const { dateFrom, dateTo } = defaultDates();
+  const { from, to } = businessWindow(q.dateFrom, q.dateTo);
   return [
-    q.dateFrom || dateFrom,
-    exclusiveEndDate(q.dateTo || dateTo),
+    from,
+    to,
     q.orderStatus || null,
     q.warehouse || null,
     q.paymentType || null,
@@ -62,7 +64,8 @@ async function getSummary(query, signal) {
 
 async function getFilters(signal) {
   const startedAt = Date.now();
-  const data = await salesRepository.filters(signal);
+  const { from, to } = businessWindow(); // current business window
+  const data = await salesRepository.filters([from, to], signal);
   return withExecutionTime(startedAt, data);
 }
 
@@ -93,7 +96,8 @@ async function getTataCliqSummary(query, signal) {
 
 async function getTataCliqFilters(signal) {
   const startedAt = Date.now();
-  const data = await salesRepository.tataCliqFilters(signal);
+  const { from, to } = businessWindow();
+  const data = await salesRepository.tataCliqFilters([from, to], signal);
   return withExecutionTime(startedAt, data);
 }
 

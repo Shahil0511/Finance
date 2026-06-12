@@ -11,9 +11,9 @@ const pool = new Pool({
 
   ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
 
-  // Pool settings
-  max: 20,
-  min: 2,
+  // Pool settings (env-tunable)
+  max: parseInt(process.env.DB_POOL_MAX || "20", 10),
+  min: parseInt(process.env.DB_POOL_MIN || "2", 10),
 
   // Fail fast if pool is exhausted — prevents HTTP connections piling up while waiting
   idleTimeoutMillis: 30000,
@@ -27,8 +27,9 @@ const pool = new Pool({
   keepAliveInitialDelayMillis: 10000,
 
   // Raise work_mem so large sorts/hashes (DISTINCT ON, ROW_NUMBER, hash joins)
-  // stay in RAM instead of spilling to disk. 64 MB × 20 connections = 1.28 GB max.
-  options: "-c work_mem=64MB",
+  // stay in RAM instead of spilling to disk. The month-window sort is ~125MB,
+  // so the 64MB server default spills; 128-256MB keeps it in memory.
+  options: `-c work_mem=${process.env.DB_WORK_MEM || "128MB"}`,
 });
 
 pool.on("error", (err) => {

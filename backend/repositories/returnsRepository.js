@@ -27,14 +27,16 @@ const ALLOWED_SORT_COLS = new Set([
 // RETURN_BASE_CTE removed 2026-06-12 (A1 fix): summary now reuses
 // RETURN_DETAIL_BASE_CTE so it counts the same strict population as the list.
 
+/* $1/$2 are pre-clamped to the business window in JS
+   (utils/dateRange.businessWindow) — plain parameter comparisons keep the
+   idx_rt_processed_time scan cheap and avoid per-row GREATEST/LEAST.
+   The b2c_detail joins below carry a channel_invoice_time predicate because
+   that column is the hypertable's PARTITION column: invoice happens at/after
+   order creation, so the family's 2026-01-01 forward-order era bound implies
+   invoice >= 2026-01-01 — and lets the planner prune ~1,100 of the ~1,259
+   chunks instead of probing all of them. */
 const RETURN_DETAIL_BASE_CTE = `
-  WITH date_params AS (
-    SELECT
-      DATE '2026-01-01' AS min_order_date,
-      (CURRENT_DATE + INTERVAL '1 day')::date AS last_date,
-      DATE_TRUNC('month', CURRENT_DATE)::date AS min_date
-  ),
-  returns_base AS (
+  WITH returns_base AS (
     SELECT
       rt_base.*,
       ROW_NUMBER() OVER (
@@ -42,11 +44,10 @@ const RETURN_DETAIL_BASE_CTE = `
         ORDER BY rt_base.return_order_processed_time DESC NULLS LAST
       ) AS rw
     FROM return_order_report_item_level_wms AS rt_base
-    CROSS JOIN date_params
     WHERE rt_base.item_id IS NOT NULL
-      AND rt_base.return_order_processed_time >= GREATEST($1::date, date_params.min_date)
-      AND rt_base.return_order_processed_time <  LEAST($2::date, date_params.last_date)
-      AND rt_base.forward_order_creation_time >= date_params.min_order_date
+      AND rt_base.return_order_processed_time >= $1::date
+      AND rt_base.return_order_processed_time <  $2::date
+      AND rt_base.forward_order_creation_time >= DATE '2026-01-01'
   )
 `;
 
@@ -83,7 +84,7 @@ const RETURN_QUERY = `
       sod.handover_time DESC NULLS LAST
   ),
   pin AS (
-    SELECT DISTINCT pincode, city, state FROM pincodes
+    SELECT DISTINCT ON (pincode) pincode, city, state FROM pincodes ORDER BY pincode
   ),
   b2c AS (
     SELECT DISTINCT ON (sl.channel_order_id, sl.client_sku_id_ean)
@@ -143,6 +144,7 @@ const RETURN_QUERY = `
         END
       ) = pin.pincode
     WHERE sl.channel_order_time >= DATE '2026-01-01'
+      AND sl.channel_invoice_time >= DATE '2026-01-01'
     ORDER BY
       sl.channel_order_id,
       sl.client_sku_id_ean,
@@ -209,22 +211,12 @@ const RETURN_QUERY = `
 `;
 
 const RETURN_EXPORT_QUERY = `
-  WITH date_params AS (
-    SELECT
-      (CURRENT_DATE + INTERVAL '1 day')::date AS last_date,
-      CASE
-        WHEN EXTRACT(DAY FROM CURRENT_DATE) <= 2
-        THEN DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')::date
-        ELSE DATE_TRUNC('month', CURRENT_DATE)::date
-      END AS min_date
-  ),
-  rt AS (
+  WITH rt AS (
     SELECT *
     FROM return_order_report_item_level_wms
-    CROSS JOIN date_params
     WHERE item_id IS NOT NULL
-      AND return_order_processed_time >= GREATEST($1::date, date_params.min_date)
-      AND return_order_processed_time < LEAST($2::date, date_params.last_date)
+      AND return_order_processed_time >= $1::date
+      AND return_order_processed_time <  $2::date
       AND forward_order_creation_time >= DATE '2026-01-01'
   ),
   osd AS (
@@ -237,11 +229,7 @@ const RETURN_EXPORT_QUERY = `
     WHERE channel_order_date >= DATE '2026-01-01'
   ),
   pin AS (
-    SELECT DISTINCT
-      pincode,
-      city,
-      state
-    FROM pincodes
+    SELECT DISTINCT ON (pincode) pincode, city, state FROM pincodes ORDER BY pincode
   ),
   b2c AS (
     SELECT
@@ -292,6 +280,7 @@ const RETURN_EXPORT_QUERY = `
     LEFT JOIN pin
       ON sl.customer_billing_pin::text = pin.pincode::text
     WHERE sl.channel_order_time >= DATE '2026-01-01'
+      AND sl.channel_invoice_time >= DATE '2026-01-01'
   ),
   joined_data AS (
     SELECT
@@ -359,22 +348,12 @@ const RETURN_EXPORT_QUERY = `
 `;
 
 const PAST_RETURN_EXPORT_QUERY = `
-  WITH date_params AS (
-    SELECT
-      (CURRENT_DATE + INTERVAL '1 day')::date AS last_date,
-      CASE
-        WHEN EXTRACT(DAY FROM CURRENT_DATE) <= 2
-        THEN DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')::date
-        ELSE DATE_TRUNC('month', CURRENT_DATE)::date
-      END AS min_date
-  ),
-  rt AS (
+  WITH rt AS (
     SELECT *
     FROM return_order_report_item_level_wms
-    CROSS JOIN date_params
     WHERE item_id IS NOT NULL
-      AND return_order_processed_time >= GREATEST($1::date, date_params.min_date)
-      AND return_order_processed_time < LEAST($2::date, date_params.last_date)
+      AND return_order_processed_time >= $1::date
+      AND return_order_processed_time <  $2::date
       AND forward_order_creation_time <= DATE '2025-12-31'
   ),
   osd AS (
@@ -387,11 +366,7 @@ const PAST_RETURN_EXPORT_QUERY = `
     WHERE channel_order_date <= DATE '2025-12-31'
   ),
   pin AS (
-    SELECT DISTINCT
-      pincode,
-      city,
-      state
-    FROM pincodes
+    SELECT DISTINCT ON (pincode) pincode, city, state FROM pincodes ORDER BY pincode
   ),
   b2c AS (
     SELECT
@@ -442,6 +417,8 @@ const PAST_RETURN_EXPORT_QUERY = `
     LEFT JOIN pin
       ON sl.customer_billing_pin::text = pin.pincode::text
     WHERE sl.channel_order_time <= DATE '2025-12-31'
+      -- invoice follows the order within ~60 days; bounds chunk pruning above
+      AND sl.channel_invoice_time < DATE '2026-03-01'
   ),
   joined_data AS (
     SELECT
@@ -534,30 +511,18 @@ const OUTER_WHERE = `
 `;
 
 const OMNI_RETURN_BASE_CTE = `
-  WITH date_params AS (
-    SELECT
-      (CURRENT_DATE + INTERVAL '1 day')::date AS last_date,
-      CASE
-        WHEN EXTRACT(DAY FROM CURRENT_DATE) <= 2
-        THEN DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')::date
-        ELSE DATE_TRUNC('month', CURRENT_DATE)::date
-      END AS min_date
-  ),
-  omni_returns_base AS (
+  WITH omni_returns_base AS (
     SELECT
       rt_base.*,
-      date_params.last_date,
-      date_params.min_date,
       ROW_NUMBER() OVER (
         PARTITION BY rt_base.return_order_item_id
         ORDER BY rt_base.return_order_item_id
       ) AS rw
     FROM return_order_report_item_level_wms AS rt_base
-    CROSS JOIN date_params
     WHERE rt_base.sales_channel = 'MYNTRA-OMNI'
       AND rt_base.item_id IS NULL
-      AND rt_base.return_order_processed_time >= GREATEST($1::date, date_params.min_date)
-      AND rt_base.return_order_processed_time <  LEAST($2::date, date_params.last_date)
+      AND rt_base.return_order_processed_time >= $1::date
+      AND rt_base.return_order_processed_time <  $2::date
   )
 `;
 
@@ -569,9 +534,10 @@ const OMNI_RETURN_QUERY = `
       client_sku_id_ean AS sku_id,
       order_resolution AS final_resolution
     FROM sales_order_detail
+    WHERE channel_order_date >= DATE '2026-01-01'
   ),
   pin AS (
-    SELECT DISTINCT pincode, city, state FROM pincodes
+    SELECT DISTINCT ON (pincode) pincode, city, state FROM pincodes ORDER BY pincode
   ),
   b2c AS (
     SELECT DISTINCT ON (sl.channel_order_id, sl.client_sku_id_ean)
@@ -627,6 +593,7 @@ const OMNI_RETURN_QUERY = `
           ELSE sl.customer_billing_pin
         END
       ) = pin.pincode
+    WHERE sl.channel_invoice_time >= DATE '2026-01-01'
     ORDER BY sl.channel_order_id, sl.client_sku_id_ean, sl.handover_time DESC NULLS LAST
   )
   SELECT
@@ -695,24 +662,13 @@ const OMNI_OUTER_WHERE = `
 `;
 
 const TATA_CLIQ_RETURN_QUERY = `
-WITH date_params AS (
-    SELECT
-        CASE
-            WHEN EXTRACT(DAY FROM CURRENT_DATE) <= 2
-            THEN DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')::date
-            ELSE DATE_TRUNC('month', CURRENT_DATE)::date
-        END AS date_from,
-        (CURRENT_DATE + INTERVAL '1 day')::date AS date_to
-),
-
-rt AS (
+WITH rt AS (
     SELECT r.*
     FROM return_order_report_item_level_wms r
-    CROSS JOIN date_params dp
     WHERE r.sales_channel = 'TATACLIQ_ZIVORE'
       AND r.item_id IS NOT NULL
-      AND r.return_order_processed_time >= GREATEST($1::date, dp.date_from)
-      AND r.return_order_processed_time < LEAST($2::date, dp.date_to)
+      AND r.return_order_processed_time >= $1::date
+      AND r.return_order_processed_time <  $2::date
 ),
 
 osd AS (
@@ -722,14 +678,11 @@ osd AS (
         client_sku_id_ean AS sku_id,
         order_resolution AS final_resolution
     FROM sales_order_detail
+    WHERE channel_order_date >= DATE '2026-01-01'
 ),
 
 pin AS (
-    SELECT DISTINCT
-        pincode,
-        city,
-        state
-    FROM pincodes
+    SELECT DISTINCT ON (pincode) pincode, city, state FROM pincodes ORDER BY pincode
 ),
 
 b2c AS (
@@ -786,6 +739,8 @@ b2c AS (
                 ELSE sl.customer_billing_pin::text
             END
         ) = pin.pincode::text
+    WHERE sl.sales_channel = 'TATACLIQ_ZIVORE'
+      AND sl.channel_invoice_time >= DATE '2026-01-01'
 ),
 
 base AS (
@@ -821,6 +776,9 @@ sp1 AS (
         system_sub_order_id
     FROM b2c_non_split
     WHERE sales_channel = 'TATACLIQ_ZIVORE'
+      -- forward sales for current-window returns are within the 2026 era;
+      -- bounds the 19M-row scan via idx_b2cns_handover_time
+      AND handover_time >= DATE '2026-01-01'
 )
 
 SELECT
@@ -982,38 +940,22 @@ async function summary(params, signal) {
   return db.query(sql, params, signal);
 }
 
-async function filters(signal) {
+/* Filter options are scoped to the business window ($1/$2): the previous
+   whole-table DISTINCTs scanned all ~8.5M rows on every cache miss. */
+const RETURNS_DISTINCT = (col, extra = "") => `
+  SELECT DISTINCT ${col} AS val
+  FROM return_order_report_item_level_wms
+  WHERE return_order_processed_time >= $1::date
+    AND return_order_processed_time <  $2::date
+    ${extra}
+    AND ${col} IS NOT NULL
+  ORDER BY 1`;
+
+async function filters(params, signal) {
   const [channels, returnStatuses, qcStatuses] = await Promise.all([
-    db.query(
-      `
-      SELECT DISTINCT sales_channel AS val
-      FROM return_order_report_item_level_wms
-      WHERE sales_channel IS NOT NULL
-      ORDER BY 1
-      `,
-      [],
-      signal,
-    ),
-    db.query(
-      `
-      SELECT DISTINCT return_order_status AS val
-      FROM return_order_report_item_level_wms
-      WHERE return_order_status IS NOT NULL
-      ORDER BY 1
-      `,
-      [],
-      signal,
-    ),
-    db.query(
-      `
-      SELECT DISTINCT return_order_item_qc_status AS val
-      FROM return_order_report_item_level_wms
-      WHERE return_order_item_qc_status IS NOT NULL
-      ORDER BY 1
-      `,
-      [],
-      signal,
-    ),
+    db.query(RETURNS_DISTINCT("sales_channel"), params, signal),
+    db.query(RETURNS_DISTINCT("return_order_status"), params, signal),
+    db.query(RETURNS_DISTINCT("return_order_item_qc_status"), params, signal),
   ]);
 
   return {
@@ -1062,32 +1004,11 @@ async function omniSummary(params, signal) {
   return db.query(sql, params, signal);
 }
 
-async function omniFilters(signal) {
+async function omniFilters(params, signal) {
+  const extra = "AND sales_channel = 'MYNTRA-OMNI' AND item_id IS NULL";
   const [returnStatuses, qcStatuses] = await Promise.all([
-    db.query(
-      `
-      SELECT DISTINCT return_order_status AS val
-      FROM return_order_report_item_level_wms
-      WHERE sales_channel = 'MYNTRA-OMNI'
-        AND item_id IS NULL
-        AND return_order_status IS NOT NULL
-      ORDER BY 1
-      `,
-      [],
-      signal,
-    ),
-    db.query(
-      `
-      SELECT DISTINCT return_order_item_qc_status AS val
-      FROM return_order_report_item_level_wms
-      WHERE sales_channel = 'MYNTRA-OMNI'
-        AND item_id IS NULL
-        AND return_order_item_qc_status IS NOT NULL
-      ORDER BY 1
-      `,
-      [],
-      signal,
-    ),
+    db.query(RETURNS_DISTINCT("return_order_status", extra), params, signal),
+    db.query(RETURNS_DISTINCT("return_order_item_qc_status", extra), params, signal),
   ]);
 
   return {
@@ -1126,32 +1047,11 @@ async function tataCliqSummary(params, signal) {
   return db.query(sql, params, signal);
 }
 
-async function tataCliqFilters(signal) {
+async function tataCliqFilters(params, signal) {
+  const extra = "AND sales_channel = 'TATACLIQ_ZIVORE' AND item_id IS NOT NULL";
   const [returnStatuses, qcStatuses] = await Promise.all([
-    db.query(
-      `
-      SELECT DISTINCT return_order_status AS val
-      FROM return_order_report_item_level_wms
-      WHERE sales_channel = 'TATACLIQ_ZIVORE'
-        AND item_id IS NOT NULL
-        AND return_order_status IS NOT NULL
-      ORDER BY 1
-      `,
-      [],
-      signal,
-    ),
-    db.query(
-      `
-      SELECT DISTINCT return_order_item_qc_status AS val
-      FROM return_order_report_item_level_wms
-      WHERE sales_channel = 'TATACLIQ_ZIVORE'
-        AND item_id IS NOT NULL
-        AND return_order_item_qc_status IS NOT NULL
-      ORDER BY 1
-      `,
-      [],
-      signal,
-    ),
+    db.query(RETURNS_DISTINCT("return_order_status", extra), params, signal),
+    db.query(RETURNS_DISTINCT("return_order_item_qc_status", extra), params, signal),
   ]);
 
   return {

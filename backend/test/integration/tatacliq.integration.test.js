@@ -28,13 +28,16 @@ if (!TEST_DATABASE_URL) {
   const db = require("../../db/postgres");
   const salesRepo = require("../../repositories/salesRepository");
   const returnsRepo = require("../../repositories/returnsRepository");
+  const { businessWindow } = require("../../utils/dateRange");
 
   const read = (f) => fs.readFileSync(path.join(__dirname, f), "utf8");
 
+  // The window is clamped in JS now — repos expect final dates.
+  const W = businessWindow();
   // TataCliq sales params $1..$8: [dateFrom, dateTo, orderStatus, warehouse, paymentType, state, brand, search]
-  const SALES = ["2000-01-01", "2100-01-01", null, null, null, null, null, null];
+  const SALES = [W.from, W.to, null, null, null, null, null, null];
   // TataCliq returns params $1..$5: [dateFrom, dateTo, returnStatus, qcStatus, search]
-  const RETURNS = ["2000-01-01", "2100-01-01", null, null, null];
+  const RETURNS = [W.from, W.to, null, null, null];
   const SALES_SORT = { sortBy: "handover_time", sortDir: "DESC", pageLimit: 51, offset: 0 };
   const RETURNS_SORT = { sortBy: "return_order_processed_time", sortDir: "DESC", pageLimit: 51, offset: 0 };
 

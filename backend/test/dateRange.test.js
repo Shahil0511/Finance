@@ -7,6 +7,7 @@ const {
   exclusiveEndDate,
   diffDaysInclusive,
   todayString,
+  businessWindow,
 } = require("../utils/dateRange");
 
 test("exclusiveEndDate: returns the next calendar day", () => {
@@ -32,4 +33,28 @@ test("defaultDates: window starts on the 1st of a month and ends today", () => {
   const d = defaultDates();
   assert.equal(d.dateFrom.slice(-2), "01"); // business window always begins on the 1st
   assert.equal(d.dateTo, todayString());
+});
+
+test("businessWindow: clamps requests outside the business window", () => {
+  const defaults = defaultDates();
+  const tomorrow = exclusiveEndDate(defaults.dateTo);
+
+  // Way-too-wide request collapses to [window start, tomorrow).
+  const wide = businessWindow("2000-01-01", "2100-01-01");
+  assert.equal(wide.from, defaults.dateFrom);
+  assert.equal(wide.to, tomorrow);
+
+  // Missing dates fall back to the same window.
+  const none = businessWindow();
+  assert.deepEqual(none, wide);
+
+  // An in-window request passes through; `to` becomes exclusive (+1 day).
+  const inWin = businessWindow(defaults.dateFrom, defaults.dateTo);
+  assert.equal(inWin.from, defaults.dateFrom);
+  assert.equal(inWin.to, tomorrow);
+});
+
+test("businessWindow: fully-past ranges yield an empty (from >= to) window", () => {
+  const w = businessWindow("2020-01-01", "2020-01-31");
+  assert.ok(w.from >= w.to); // empty result set, same as the old in-SQL clamp
 });

@@ -1,14 +1,16 @@
 "use strict";
 
 const returnsRepository = require("../repositories/returnsRepository");
-const { defaultDates, exclusiveEndDate } = require("../utils/dateRange");
+const { businessWindow } = require("../utils/dateRange");
 const { normalizePagination, buildHasMoreResult } = require("../utils/pagination");
 
+// The window is clamped here (not in SQL) so the repository receives plain
+// constants and the planner can prune — see utils/dateRange.businessWindow.
 function buildParams(q) {
-  const { dateFrom, dateTo } = defaultDates();
+  const { from, to } = businessWindow(q.dateFrom, q.dateTo);
   return [
-    q.dateFrom || dateFrom,
-    exclusiveEndDate(q.dateTo || dateTo),
+    from,
+    to,
     q.salesChannel || null,
     q.returnStatus || null,
     q.qcStatus || null,
@@ -17,10 +19,10 @@ function buildParams(q) {
 }
 
 function buildOmniParams(q) {
-  const { dateFrom, dateTo } = defaultDates();
+  const { from, to } = businessWindow(q.dateFrom, q.dateTo);
   return [
-    q.dateFrom || dateFrom,
-    exclusiveEndDate(q.dateTo || dateTo),
+    from,
+    to,
     q.returnStatus || null,
     q.qcStatus || null,
     q.search ? `%${q.search}%` : null,
@@ -28,10 +30,10 @@ function buildOmniParams(q) {
 }
 
 function buildTataCliqParams(q) {
-  const { dateFrom, dateTo } = defaultDates();
+  const { from, to } = businessWindow(q.dateFrom, q.dateTo);
   return [
-    q.dateFrom || dateFrom,
-    exclusiveEndDate(q.dateTo || dateTo),
+    from,
+    to,
     q.returnStatus || null,
     q.qcStatus || null,
     q.search ? `%${q.search}%` : null,
@@ -66,7 +68,8 @@ async function getSummary(query, signal) {
 
 async function getFilters(signal) {
   const startedAt = Date.now();
-  const data = await returnsRepository.filters(signal);
+  const { from, to } = businessWindow(); // current business window
+  const data = await returnsRepository.filters([from, to], signal);
   return withExecutionTime(startedAt, data);
 }
 
@@ -101,7 +104,8 @@ async function getOmniSummary(query, signal) {
 
 async function getOmniFilters(signal) {
   const startedAt = Date.now();
-  const data = await returnsRepository.omniFilters(signal);
+  const { from, to } = businessWindow();
+  const data = await returnsRepository.omniFilters([from, to], signal);
   return withExecutionTime(startedAt, data);
 }
 
@@ -130,7 +134,8 @@ async function getTataCliqSummary(query, signal) {
 
 async function getTataCliqFilters(signal) {
   const startedAt = Date.now();
-  const data = await returnsRepository.tataCliqFilters(signal);
+  const { from, to } = businessWindow();
+  const data = await returnsRepository.tataCliqFilters([from, to], signal);
   return withExecutionTime(startedAt, data);
 }
 

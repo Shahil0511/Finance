@@ -38,16 +38,18 @@ INSERT INTO return_order_report_item_level_wms (
 -- b2c_detail has TWO rows for (OCO1, OSKU1) -> the omni join fans ROI1 into 2 rows.
 -- (OCO2, OSKU2) has a single match. The omni b2c CTE lacks DISTINCT ON, so the
 -- duplicate is not collapsed: summary then reports 3 returns / 1300, not 2 / 800.
+-- channel_invoice_time is set because the b2c enrichment CTEs prune on it
+-- (it is the hypertable's partition column in production).
 INSERT INTO b2c_detail (
   channel_order_id, client_sku_id_ean, system_invoice_line_item_id, sales_channel,
   brand, customer_billing_pin, mrp, unit_sale_price, dispatched_quantity,
-  channel_order_time, handover_time
+  channel_order_time, channel_invoice_time, handover_time
 ) VALUES
   ('OCO1','OSKU1', 201, 'MYNTRA-OMNI','BrandO','110001', 600.00, 600.00, 1,
-   DATE '2026-06-01', date_trunc('month',CURRENT_DATE)+interval '12 hours'),
+   DATE '2026-06-01', date_trunc('month',CURRENT_DATE)+interval '10 hours', date_trunc('month',CURRENT_DATE)+interval '12 hours'),
   ('OCO1','OSKU1', 202, 'MYNTRA-OMNI','BrandO','110001', 600.00, 600.00, 1,
-   DATE '2026-06-01', date_trunc('month',CURRENT_DATE)+interval '11 hours'),
+   DATE '2026-06-01', date_trunc('month',CURRENT_DATE)+interval '10 hours', date_trunc('month',CURRENT_DATE)+interval '11 hours'),
   ('OCO2','OSKU2', 203, 'MYNTRA-OMNI','BrandO','110001', 300.00, 300.00, 1,
-   DATE '2026-06-01', date_trunc('month',CURRENT_DATE)+interval '12 hours');
+   DATE '2026-06-01', date_trunc('month',CURRENT_DATE)+interval '10 hours', date_trunc('month',CURRENT_DATE)+interval '12 hours');
 
 INSERT INTO pincodes (pincode, city, state) VALUES ('110001','New Delhi','DL');

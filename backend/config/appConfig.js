@@ -12,8 +12,8 @@ module.exports = {
   basePath: `/${configuredBasePath.replace(/^\/+|\/+$/g, "")}`,
   cacheTtl: {
     data: intFromEnv("CACHE_TTL_DATA", 300),
-    summary: intFromEnv("CACHE_TTL_SUMMARY", 300),
-    filters: intFromEnv("CACHE_TTL_FILTERS", 600),
+    summary: intFromEnv("CACHE_TTL_SUMMARY", 600),
+    filters: intFromEnv("CACHE_TTL_FILTERS", 3600),
   },
   pagination: {
     defaultPage: 1,

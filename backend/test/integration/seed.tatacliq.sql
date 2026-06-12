@@ -7,23 +7,25 @@ INSERT INTO b2c_detail (
   channel_parent_order_id, channel_order_id, sales_channel, system_order_id,
   warehouse_name, customer_billing_pin, client_sku_id_ean, payment_type,
   so_quantity, dispatched_quantity, mrp, unit_sale_price, unit_tax,
-  system_invoice_line_item_id, channel_order_time, handover_time, brand,
+  system_invoice_line_item_id, channel_order_time, channel_invoice_time, handover_time, brand,
   order_status, sla_breached
 ) VALUES
   ('TP1','TCO1','TATACLIQ_ZIVORE','TSO1','WH1','110001','TSKU1','PREPAID',
    2, 2, 150.00, 100.00, 10.00,
-   101, DATE '2026-06-01', date_trunc('month',CURRENT_DATE)+interval '12 hours','BrandT',
+   101, DATE '2026-06-01', date_trunc('month',CURRENT_DATE)+interval '10 hours',
+   date_trunc('month',CURRENT_DATE)+interval '12 hours','BrandT',
    'DELIVERED', false),
   ('TP2','TCO2','TATACLIQ_ZIVORE','TSO2','WH1','110001','TSKU2','COD',
    1, 1, 80.00, 50.00, 5.00,
-   102, DATE '2026-06-01', date_trunc('month',CURRENT_DATE)+interval '13 hours','BrandT',
+   102, DATE '2026-06-01', date_trunc('month',CURRENT_DATE)+interval '10 hours',
+   date_trunc('month',CURRENT_DATE)+interval '13 hours','BrandT',
    'DELIVERED', false);
 
 INSERT INTO sales_order_detail
   (channel_parent_order_id, channel_order_id, client_sku_id_ean, category,
    order_resolution, sales_channel, channel_order_date, handover_time)
 VALUES
-  ('TP1','TCO1','TSKU1','Apparel','OK','TATACLIQ_ZIVORE', DATE '2026-06-01',
+  ('TP1','TCO1','TSKU1','Apparel','OK','TATACLIQ_ZIVORE', date_trunc('month',CURRENT_DATE)::date,
    date_trunc('month',CURRENT_DATE)+interval '12 hours');
 
 -- Sub-order split row: joins TP1/TSKU1 in BOTH the sales sp1 CTE (window+channel

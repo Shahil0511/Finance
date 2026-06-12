@@ -151,6 +151,21 @@ A reporting tool that miscounts money is worse than one that's down.
 - [x] ~~Replace the 5 Zustand stores with a factory~~ **DONE 2026-06-12** — `createFilterStore(makeDefaults)` collapsed the 5 stores; defaults computed at call time (fixes M1). `FilterSelect`/`FilterInput`/`DownloadWindowNotice` hoisted into `ui/FilterControls.jsx` (removed from all 5 panels).
 - [x] Unified all exports behind one `useCsvExport` hook — sagas, `rootSaga`, `uiSlice`, and the `redux-saga` dependency removed; store slims to notifications + RTK Query.
 
+### Performance — report queries 2-3 min → 2-5 s — ✅ FIXED 2026-06-12 (app-side)
+Diagnosed against the production DB (`scripts/diagnose-performance.js`, read-only):
+- **Root cause 1:** `b2c_detail` is a TimescaleDB hypertable partitioned by `channel_invoice_time` (1,259 one-day chunks); `sales_order_detail` by `channel_order_date` (126 weekly chunks). The queries filtered only on `handover_time` and clamped the window **inside SQL** (`date_params` CTE + `GREATEST/LEAST`), so the planner could never prune — every query planned/probed all chunks (**11-13s planning alone**).
+- **Root cause 2:** the `pincodes` join used `DISTINCT (pincode, city, state)`, which keeps duplicate pincodes → the join fanned 2.4M rows to 8.5M before two giant sorts.
+- **Root cause 3:** filter dropdowns ran unbounded `DISTINCT` scans over whole hypertables; cache TTLs (60s data!) guaranteed constant misses.
+
+Fixes (all app-side; verified by EXPLAIN + real timed runs):
+- [x] Business window clamped in **JS** (`dateRange.businessWindow`); repos receive plain `$1/$2` and add **partition-column cushions** (invoice ≥ from−45d, order_date ≥ from−60d — measured max lags 21d/28d over 2M rows) → chunk refs in the sales plan **1,913 → 68**, planning **11-13s → 17-1300ms**.
+- [x] `PIN` → `DISTINCT ON (pincode)` (kills the 3.5× fan-out, deterministic city/state); sales dedup (`cnt=1`) + b2c-column filters now run **before** the OSD/PIN joins.
+- [x] Returns-family b2c/osd/sp1 enrichment CTEs bounded by the 2026-01-01 era cutoff on partition columns (omni/tata previously scanned the entire hypertable + 19M-row `b2c_non_split`).
+- [x] Filter `DISTINCT`s windowed to the business window; TTL defaults 300/600/3600; `DB_WORK_MEM` (256MB) + pool size now env-driven (the month sort spilled at 64MB).
+- [x] **Measured (cold, production):** sales summary 2.5s · sales list 4.7s · sales filters 3.6s · returns list 2.3s · returns summary 0.3s · tata sales summary 5.3s.
+- [ ] Tata Cliq returns still ~15s: `b2c_non_split` lacks an index on the sp1 join keys — DDL for the DBA in `scripts/recommended-indexes.sql` (expected ~2-3s after).
+- [ ] Ops follow-up: production `.env` needs the new TTLs (`CACHE_TTL_DATA=300, CACHE_TTL_SUMMARY=600, CACHE_TTL_FILTERS=3600, DB_WORK_MEM=256MB`) + an actually-reachable `REDIS_URL`, then restart.
+
 ### Phase 5 — DB performance (DBA-owned; already scoped in PERFORMANCE_NOTES.md)
 - [ ] Pursue index/materialized-view recommendations for the heavy report joins; move large exports to an async job flow. Track separately — needs DBA access, not app changes.
 

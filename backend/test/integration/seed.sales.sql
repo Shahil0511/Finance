@@ -7,10 +7,10 @@ INSERT INTO pincodes (pincode, city, state) VALUES
   ('400001', 'Mumbai',    'MH');
 
 INSERT INTO sales_order_detail
-  (channel_parent_order_id, channel_order_id, client_sku_id_ean, category, order_resolution, sales_channel, handover_time)
+  (channel_parent_order_id, channel_order_id, client_sku_id_ean, category, order_resolution, sales_channel, channel_order_date, handover_time)
 VALUES
-  ('P1', 'CO1', 'SKU1', 'Apparel',  'OK', 'MYNTRA', date_trunc('month', CURRENT_DATE) + interval '12 hours'),
-  ('P2', 'CO2', 'SKU2', 'Footwear', 'OK', 'MYNTRA', date_trunc('month', CURRENT_DATE) + interval '12 hours');
+  ('P1', 'CO1', 'SKU1', 'Apparel',  'OK', 'MYNTRA', date_trunc('month', CURRENT_DATE)::date, date_trunc('month', CURRENT_DATE) + interval '12 hours'),
+  ('P2', 'CO2', 'SKU2', 'Footwear', 'OK', 'MYNTRA', date_trunc('month', CURRENT_DATE)::date, date_trunc('month', CURRENT_DATE) + interval '12 hours');
 
 -- 3 in-window MYNTRA rows. P1 appears twice -> distinct parents = 2.
 -- Two rows have dispatched_quantity > 1, which is what exposes bug A3.
