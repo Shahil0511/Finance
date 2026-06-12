@@ -112,8 +112,10 @@ A reporting tool that miscounts money is worse than one that's down.
 > **Guiding rule** for a finance tool with zero tests: *don't refactor behavior you can't verify.*
 > Lock outputs first, fix correctness second, restructure third.
 
-### Phase 0 — Safety net (before touching report logic)
-- [ ] Add **characterization tests** snapshotting current API JSON for fixed date ranges/params on Sales, Returns, Omni, TataCliq (list + summary + export) against a seeded test DB. These become the oracle for every later change.
+### Phase 0 — Safety net (before touching report logic) — 🟡 IN PROGRESS
+- [x] Unit tests (`node:test`, zero deps) for the pure logic: `pagination`, `csv`, `dateRange`, `reportQueryValidator` — **24 tests** via `npm test`. Includes characterization tests pinning bugs A5 + B3, and security tests for the sort allow-list.
+- [x] DB-backed integration harness: `docker-compose.test.yml` (ephemeral Postgres) + `backend/test/integration/{schema.sql, seed.sales.sql}` + `npm run test:integration`. Sales list/summary/export/filters covered (**5 tests**), including one that reproduces bug **A3 live** (revenue 350 vs correct 600). `npm test` self-skips integration when `TEST_DATABASE_URL` is unset, so it never touches a real DB. (`postgres.js` gained `end()` so the pool closes cleanly — also needed for the Phase 2 graceful-shutdown fix.)
+- [ ] Extend integration coverage to **Returns / Myntra-Omni / TataCliq** — where bugs A1 (list vs summary) and A2 (omni over-count) live; they need their own seed + tests before the Phase 2 fixes.
 - [ ] Wire **ESLint** (incl. `react-hooks/exhaustive-deps`) + an unused-export check to surface dead code mechanically.
 - [ ] Add `engines` (Node 20) to both `package.json`; add CI running install + build + tests.
 

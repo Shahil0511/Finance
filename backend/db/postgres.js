@@ -104,4 +104,8 @@ async function testConnection() {
   }
 }
 
-module.exports = { query, testConnection, makeRequestSignal };
+async function end() {
+  await pool.end();
+}
+
+module.exports = { query, testConnection, makeRequestSignal, end };
