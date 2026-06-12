@@ -36,6 +36,13 @@
   --warning-foreground:     hsl(0 0% 100%);
 
   --ring:                   hsl(221 83% 53%);
+
+  /* Sidebar is dark in BOTH themes — the classic dashboard contrast. */
+  --sidebar:                hsl(224 47% 8%);
+  --sidebar-foreground:     hsl(215 20% 78%);
+  --sidebar-muted:          hsl(217 14% 52%);
+  --sidebar-accent:         hsl(222 34% 14%);
+  --sidebar-border:         hsl(222 30% 15%);
 }
 
 .dark {
@@ -67,6 +74,12 @@
   --warning-foreground:     hsl(26 83% 14%);
 
   --ring:                   hsl(217 91% 60%);
+
+  --sidebar:                hsl(225 50% 3.5%);
+  --sidebar-foreground:     hsl(215 20% 80%);
+  --sidebar-muted:          hsl(217 14% 50%);
+  --sidebar-accent:         hsl(222 32% 11%);
+  --sidebar-border:         hsl(222 30% 12%);
 }
 
 /* Map tokens into Tailwind utility namespaces (bg-*, text-*, border-*, …). */
@@ -90,6 +103,11 @@
   --color-warning:                var(--warning);
   --color-warning-foreground:     var(--warning-foreground);
   --color-ring:                   var(--ring);
+  --color-sidebar:                var(--sidebar);
+  --color-sidebar-foreground:     var(--sidebar-foreground);
+  --color-sidebar-muted:          var(--sidebar-muted);
+  --color-sidebar-accent:         var(--sidebar-accent);
+  --color-sidebar-border:         var(--sidebar-border);
 }
 
 @theme {

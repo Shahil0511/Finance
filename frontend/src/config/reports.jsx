@@ -125,6 +125,7 @@ const RETURN_STATUS_SELECTS = [
 export const REPORTS = [
   {
     key: 'sales',
+    group: 'Sales',
     path: '/sales',
     title: 'B2C Sales Report',
     description: 'Daily B2C sales by handover date across all channels.',
@@ -156,6 +157,7 @@ export const REPORTS = [
   },
   {
     key: 'tata-cliq-sales',
+    group: 'Sales',
     path: '/tata-cliq-sales',
     title: 'Tata Cliq Sales Report',
     description: 'TATACLIQ_ZIVORE sales with sub-order split details.',
@@ -185,6 +187,7 @@ export const REPORTS = [
   },
   {
     key: 'returns',
+    group: 'Returns',
     path: '/returns',
     title: 'Returns Report',
     description: 'Processed returns with QC status across all channels.',
@@ -212,6 +215,7 @@ export const REPORTS = [
   },
   {
     key: 'tata-cliq-return',
+    group: 'Returns',
     path: '/tata-cliq-return',
     title: 'Tata Cliq Returns Report',
     description: 'TATACLIQ_ZIVORE returns with sub-order mapping.',
@@ -235,6 +239,7 @@ export const REPORTS = [
   },
   {
     key: 'myntra-omni-return',
+    group: 'Returns',
     path: '/myntra-omni-return',
     title: 'Myntra Omni Returns Report',
     description: 'MYNTRA-OMNI store returns processed in the current window.',
