@@ -95,15 +95,6 @@
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  /* Brand scale kept during the component migration; legacy classes only. */
-  --color-brand-50:  #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-900: #1e3a8a;
-
   /* Soft elevation used by cards/popovers — gentler than the default scale. */
   --shadow-soft: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
   --shadow-pop:  0 4px 8px -2px rgb(15 23 42 / 0.10), 0 16px 40px -8px rgb(15 23 42 / 0.18);
@@ -145,41 +136,3 @@
   }
 }
 
-/* ── Legacy bridge classes (token-based) ──────────────────────────────────────
-   Still referenced by components that are being migrated to the UI kit.
-   Each disappears once its last consumer is rewritten.                        */
-@layer components {
-  .card {
-    @apply bg-card text-card-foreground rounded-xl border border-border shadow-soft;
-  }
-
-  .skeleton-block {
-    @apply animate-pulse rounded-md bg-muted;
-  }
-
-  .input-base {
-    @apply text-sm border border-input rounded-lg px-3 py-2 bg-card text-foreground
-           placeholder:text-muted-foreground/70
-           focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-transparent
-           transition-colors;
-  }
-
-  .btn-primary {
-    @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg
-           bg-primary text-primary-foreground hover:bg-primary/90
-           focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background
-           disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
-  }
-  .btn-ghost {
-    @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg
-           text-muted-foreground hover:bg-accent hover:text-accent-foreground
-           focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
-           disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
-  }
-  .btn-outline {
-    @apply inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg
-           border border-border text-foreground bg-card hover:bg-accent
-           focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
-           disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
-  }
-}

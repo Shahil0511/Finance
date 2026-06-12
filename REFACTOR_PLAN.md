@@ -145,10 +145,11 @@ A reporting tool that miscounts money is worse than one that's down.
 - [ ] Introduce a **report-module factory** parameterized by `{ baseCte, whereSql, exportCols, allowedSortCols, filenamePrefix }` emitting the controller+service+repository trio; extract a shared `B2C_PROJECTION` SQL fragment (kills the 5× paste) and a shared `exportHandler(res, result, prefix)` (kills the 6× block).
 - [ ] Centralize config: add DB / Redis / CORS / rate-limit sections to `appConfig.js` so nothing reads `process.env` ad hoc (root cause of the `DB_*`/`PG_*` drift).
 
-### Phase 4 — Frontend structural refactor
-- [ ] Collapse the 5 stacks into **config-driven components** + a per-marketplace registry: one `<SummaryCards>`, one `<FiltersPanel>` (hoist `FilterSelect`/`FilterInput`/`DownloadWindowNotice` into `ui/`), one `<MarketplaceTable>`, one `<ReportPage>` shell driven by a routes array.
+### Phase 4 — Frontend structural refactor — ✅ COMPLETE 2026-06-12 (with full UI/UX redesign)
+- [x] Collapsed the 5 stacks into **config-driven components** + `config/reports.jsx` registry: one `<SummaryCards>`, one `<FiltersPanel>`, one `<ReportTable>`, one `<ReportPage>` shell; App routes map over the registry. 24 files deleted (−1238 net lines); bundle 481→446 kB.
+- [x] **Full design-system redesign** alongside the collapse: semantic CSS tokens (light+dark) in `globals.css`, no-flash dark script, shadcn-style UI kit (Button/Badge/Skeleton/StatCard/EmptyState/ErrorCard/Toast/ThemeToggle/FilterControls), sticky blur navbar with accessible mobile drawer, footer, skeleton loaders + empty states, 44px mobile touch targets, `MotionConfig reducedMotion="user"`, WCAG focus rings/aria throughout. Legacy `.btn-*`/`.card`/`.input-base` classes and `brand-*` palette removed.
 - [x] ~~Replace the 5 Zustand stores with a factory~~ **DONE 2026-06-12** — `createFilterStore(makeDefaults)` collapsed the 5 stores; defaults computed at call time (fixes M1). `FilterSelect`/`FilterInput`/`DownloadWindowNotice` hoisted into `ui/FilterControls.jsx` (removed from all 5 panels).
-- [ ] Unify both export paths behind one `useCsvExport` hook (the shared `downloadCsv` helper exists; the saga-vs-`useState` split remains).
+- [x] Unified all exports behind one `useCsvExport` hook — sagas, `rootSaga`, `uiSlice`, and the `redux-saga` dependency removed; store slims to notifications + RTK Query.
 
 ### Phase 5 — DB performance (DBA-owned; already scoped in PERFORMANCE_NOTES.md)
 - [ ] Pursue index/materialized-view recommendations for the heavy report joins; move large exports to an async job flow. Track separately — needs DBA access, not app changes.
