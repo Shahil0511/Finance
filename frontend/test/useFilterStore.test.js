@@ -4,12 +4,20 @@ import {
   useSalesFilterStore,
   useReturnsFilterStore,
   cleanParams,
+  cleanAggParams,
 } from '../src/store/useFilterStore.js';
 
 test('cleanParams: strips null and empty-string entries', () => {
   assert.deepEqual(
     cleanParams({ a: '1', b: '', c: null, d: 0, e: 'x' }),
     { a: '1', d: 0, e: 'x' },
+  );
+});
+
+test('cleanAggParams: also strips pagination/sort keys (summary & analytics args)', () => {
+  assert.deepEqual(
+    cleanAggParams({ dateFrom: '2026-06-01', brand: 'X', page: 4, pageSize: 50, sortBy: 'mrp', sortDir: 'ASC', search: '' }),
+    { dateFrom: '2026-06-01', brand: 'X' },
   );
 });
 

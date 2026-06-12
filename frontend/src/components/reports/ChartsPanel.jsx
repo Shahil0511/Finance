@@ -5,9 +5,18 @@ import {
 } from 'recharts';
 import ChartCard from '../ui/ChartCard';
 import ErrorCard from '../ui/ErrorCard';
-import { cleanParams } from '../../store/useFilterStore';
+import EmptyState from '../ui/EmptyState';
+import { cleanAggParams } from '../../store/useFilterStore';
 import { useThemeStore } from '../../store/useThemeStore';
 import { formatCompact, formatCurrency, formatNumber } from '../../utils/formatters';
+
+const sum = (rows, key) => rows.reduce((s, r) => s + (Number(r[key]) || 0), 0);
+
+const rangeLabel = (from, to) => {
+  const fmt = (s) =>
+    s ? new Date(`${s}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '';
+  return from && to ? `${fmt(from)} – ${fmt(to)}` : 'Current window';
+};
 
 const PALETTE = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#06b6d4', '#f43f5e', '#84cc16', '#ec4899', '#14b8a6', '#f97316'];
 
@@ -58,7 +67,16 @@ function Donut({ data, dataKey, nameKey = 'key', formatter }) {
           verticalAlign="bottom"
           iconType="circle"
           iconSize={8}
-          formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
+          formatter={(value, entry) => (
+            <span className="text-xs text-muted-foreground">
+              {value}
+              {Number.isFinite(entry?.payload?.percent) && (
+                <span className="ml-1 font-medium text-foreground/80">
+                  {Math.round(entry.payload.percent * 100)}%
+                </span>
+              )}
+            </span>
+          )}
         />
       </PieChart>
     </ResponsiveContainer>
@@ -87,11 +105,44 @@ function SalesCharts({ data, loading, theme }) {
   const byState = data?.byState ?? [];
   const byCategory = data?.byCategory ?? [];
 
+  // Once loaded, hide charts whose bucket came back empty — an empty card
+  // teaches nothing. While loading, all skeletons render.
+  const show = (rows) => loading || rows.length > 0;
+
+  if (!loading && !daily.length) {
+    return (
+      <div className="rounded-xl border border-border bg-card shadow-soft">
+        <EmptyState
+          title="No analytics for this window"
+          description="Try widening the date range or clearing some filters."
+        />
+      </div>
+    );
+  }
+
+  const legend = (
+    <Legend
+      verticalAlign="top"
+      align="right"
+      height={28}
+      iconType="circle"
+      iconSize={8}
+      formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
+    />
+  );
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-3">
-      <ChartCard title="Revenue & Orders Trend" subtitle="Daily over the selected window" loading={loading} empty={!daily.length} className="lg:col-span-2" index={0}>
+      <ChartCard
+        title="Revenue & Orders Trend"
+        subtitle="Daily over the selected window"
+        stat={formatCurrency(sum(daily, 'revenue'))}
+        loading={loading}
+        className="lg:col-span-2"
+        index={0}
+      >
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={daily} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+          <ComposedChart data={daily} margin={{ left: 0, right: 8, top: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.35} />
@@ -106,45 +157,64 @@ function SalesCharts({ data, loading, theme }) {
               content={<ChartTip labelFormatter={dayTick} />}
               formatter={(v, n) => [n === 'Revenue' ? formatCurrency(v) : formatNumber(v), n]}
             />
+            {legend}
             <Area yAxisId="rev" type="monotone" dataKey="revenue" name="Revenue" stroke="#3b82f6" strokeWidth={2} fill="url(#rev)" />
             <Line yAxisId="ord" type="monotone" dataKey="orders" name="Orders" stroke="#8b5cf6" strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Channel Share" subtitle="Revenue by sales channel" loading={loading} empty={!byChannel.length} index={1}>
-        <Donut data={byChannel} dataKey="revenue" formatter={formatCurrency} />
-      </ChartCard>
+      {show(byChannel) && (
+        <ChartCard title="Channel Share" subtitle="Revenue by sales channel" loading={loading} index={1}>
+          <Donut data={byChannel} dataKey="revenue" formatter={formatCurrency} />
+        </ChartCard>
+      )}
 
-      <ChartCard title="Units & SLA Breaches" subtitle="Dispatched units vs SLA misses per day" loading={loading} empty={!daily.length} className="lg:col-span-2" index={2}>
+      <ChartCard
+        title="Units & SLA Breaches"
+        subtitle="Dispatched units vs SLA misses per day"
+        stat={formatNumber(sum(daily, 'units'))}
+        loading={loading}
+        className="lg:col-span-2"
+        index={2}
+      >
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={daily} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+          <ComposedChart data={daily} margin={{ left: 0, right: 8, top: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} stroke={theme.grid} />
             <XAxis dataKey="day" tick={theme.tick} tickFormatter={dayTick} axisLine={false} tickLine={false} />
             <YAxis yAxisId="units" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={48} />
             <YAxis yAxisId="sla" orientation="right" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={40} />
             <Tooltip content={<ChartTip labelFormatter={dayTick} />} formatter={(v, n) => [formatNumber(v), n]} />
+            {legend}
             <Bar yAxisId="units" dataKey="units" name="Units" fill="#06b6d4" radius={[6, 6, 0, 0]} maxBarSize={26} />
             <Line yAxisId="sla" type="monotone" dataKey="slaBreached" name="SLA Breached" stroke="#f43f5e" strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Payment Mix" subtitle="Prepaid vs COD revenue" loading={loading} empty={!byPayment.length} index={3}>
-        <Donut data={byPayment} dataKey="revenue" formatter={formatCurrency} />
-      </ChartCard>
+      {show(byPayment) && (
+        <ChartCard title="Payment Mix" subtitle="Prepaid vs COD revenue" loading={loading} index={3}>
+          <Donut data={byPayment} dataKey="revenue" formatter={formatCurrency} />
+        </ChartCard>
+      )}
 
-      <ChartCard title="Top Brands" subtitle="By revenue" loading={loading} empty={!byBrand.length} index={4}>
-        <HBars data={byBrand.slice(0, 8)} dataKey="revenue" color="#8b5cf6" formatter={formatCurrency} theme={theme} />
-      </ChartCard>
+      {show(byBrand) && (
+        <ChartCard title="Top Brands" subtitle="By revenue" loading={loading} index={4}>
+          <HBars data={byBrand.slice(0, 8)} dataKey="revenue" color="#8b5cf6" formatter={formatCurrency} theme={theme} />
+        </ChartCard>
+      )}
 
-      <ChartCard title="Category Share" subtitle="Revenue by category" loading={loading} empty={!byCategory.length} index={5}>
-        <Donut data={byCategory} dataKey="revenue" formatter={formatCurrency} />
-      </ChartCard>
+      {show(byCategory) && (
+        <ChartCard title="Category Share" subtitle="Revenue by category" loading={loading} index={5}>
+          <Donut data={byCategory.slice(0, 8)} dataKey="revenue" formatter={formatCurrency} />
+        </ChartCard>
+      )}
 
-      <ChartCard title="Top States" subtitle="By revenue" loading={loading} empty={!byState.length} index={6}>
-        <HBars data={byState.slice(0, 8)} dataKey="revenue" color="#10b981" formatter={formatCurrency} theme={theme} />
-      </ChartCard>
+      {show(byState) && (
+        <ChartCard title="Top States" subtitle="By revenue" loading={loading} index={6}>
+          <HBars data={byState.slice(0, 8)} dataKey="revenue" color="#10b981" formatter={formatCurrency} theme={theme} />
+        </ChartCard>
+      )}
     </div>
   );
 }
@@ -155,11 +225,44 @@ function ReturnsCharts({ data, loading, theme }) {
   const byStatus = data?.byStatus ?? [];
   const byBrand = data?.byBrand ?? [];
 
+  const show = (rows) => loading || rows.length > 0;
+  const totalReturns = sum(daily, 'returns');
+  const totalValue = sum(daily, 'value');
+
+  if (!loading && !daily.length) {
+    return (
+      <div className="rounded-xl border border-border bg-card shadow-soft">
+        <EmptyState
+          title="No analytics for this window"
+          description="Try widening the date range or clearing some filters."
+        />
+      </div>
+    );
+  }
+
+  const legend = (
+    <Legend
+      verticalAlign="top"
+      align="right"
+      height={28}
+      iconType="circle"
+      iconSize={8}
+      formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
+    />
+  );
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-3">
-      <ChartCard title="Returns Trend" subtitle="Daily count and forward value" loading={loading} empty={!daily.length} className="lg:col-span-2" index={0}>
+      <ChartCard
+        title="Returns Trend"
+        subtitle="Daily count and forward value"
+        stat={formatNumber(totalReturns)}
+        loading={loading}
+        className="lg:col-span-2"
+        index={0}
+      >
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={daily} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+          <ComposedChart data={daily} margin={{ left: 0, right: 8, top: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} stroke={theme.grid} />
             <XAxis dataKey="day" tick={theme.tick} tickFormatter={dayTick} axisLine={false} tickLine={false} />
             <YAxis yAxisId="cnt" tick={theme.tick} tickFormatter={formatCompact} axisLine={false} tickLine={false} width={44} />
@@ -168,21 +271,32 @@ function ReturnsCharts({ data, loading, theme }) {
               content={<ChartTip labelFormatter={dayTick} />}
               formatter={(v, n) => [n === 'Value' ? formatCurrency(v) : formatNumber(v), n]}
             />
+            {legend}
             <Bar yAxisId="cnt" dataKey="returns" name="Returns" fill="#8b5cf6" radius={[6, 6, 0, 0]} maxBarSize={26} />
             <Line yAxisId="val" type="monotone" dataKey="value" name="Value" stroke="#f43f5e" strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Returns by Channel" subtitle="Share of return count" loading={loading} empty={!byChannel.length} index={1}>
-        <Donut data={byChannel} dataKey="returns" />
-      </ChartCard>
+      {show(byChannel) && (
+        <ChartCard title="Returns by Channel" subtitle="Share of return count" loading={loading} index={1}>
+          <Donut data={byChannel} dataKey="returns" />
+        </ChartCard>
+      )}
 
-      <ChartCard title="Return Status" subtitle="Count by status" loading={loading} empty={!byStatus.length} index={2}>
-        <HBars data={byStatus.slice(0, 8)} dataKey="returns" color="#06b6d4" theme={theme} />
-      </ChartCard>
+      {show(byStatus) && (
+        <ChartCard title="Return Status" subtitle="Count by status" loading={loading} index={2}>
+          <HBars data={byStatus.slice(0, 8)} dataKey="returns" color="#06b6d4" theme={theme} />
+        </ChartCard>
+      )}
 
-      <ChartCard title="Avg Value per Return" subtitle="Daily forward value ÷ returns" loading={loading} empty={!daily.length} index={3}>
+      <ChartCard
+        title="Avg Value per Return"
+        subtitle="Daily forward value ÷ returns"
+        stat={formatCurrency(totalReturns ? totalValue / totalReturns : 0)}
+        loading={loading}
+        index={3}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={daily.map((d) => ({ ...d, avg: d.returns ? d.value / d.returns : 0 }))}
@@ -197,9 +311,11 @@ function ReturnsCharts({ data, loading, theme }) {
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Most Returned Brands" subtitle="By return count" loading={loading} empty={!byBrand.length} index={4}>
-        <HBars data={byBrand.slice(0, 8)} dataKey="returns" color="#f59e0b" theme={theme} />
-      </ChartCard>
+      {show(byBrand) && (
+        <ChartCard title="Most Returned Brands" subtitle="By return count" loading={loading} index={4}>
+          <HBars data={byBrand.slice(0, 8)} dataKey="returns" color="#f59e0b" theme={theme} />
+        </ChartCard>
+      )}
     </div>
   );
 }
@@ -209,7 +325,7 @@ function ReturnsCharts({ data, loading, theme }) {
 export default function ChartsPanel({ report }) {
   const { filters } = report.store();
   const { analytics: useAnalytics } = report;
-  const { data, isLoading, isFetching, isError, error, refetch } = useAnalytics(cleanParams(filters));
+  const { data, isLoading, isFetching, isError, error, refetch } = useAnalytics(cleanAggParams(filters));
   const theme = useChartTheme();
 
   if (isError) {
@@ -220,8 +336,14 @@ export default function ChartsPanel({ report }) {
 
   return (
     <section aria-label={`${report.title} charts`} className="relative">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Analytics</h2>
+        <span className="text-xs font-medium text-muted-foreground">
+          {rangeLabel(filters.dateFrom, filters.dateTo)}
+        </span>
+      </div>
       {isFetching && !isLoading && (
-        <div className="absolute -top-2 left-0 right-0 z-10 h-0.5 overflow-hidden rounded-full" aria-hidden="true">
+        <div className="absolute left-0 right-0 top-7 z-10 h-0.5 overflow-hidden rounded-full" aria-hidden="true">
           <motion.div
             className="h-full bg-primary"
             style={{ width: '45%' }}

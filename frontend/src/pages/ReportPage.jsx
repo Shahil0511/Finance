@@ -57,7 +57,7 @@ export default function ReportPage({ report }) {
             <p className={cn('text-[11px] font-bold uppercase tracking-[0.18em]', EYEBROWS[report.tone] ?? EYEBROWS.primary)}>
               {report.group} · Daily report
             </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
               {report.title}
             </h1>
             <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{report.description}</p>
@@ -68,12 +68,12 @@ export default function ReportPage({ report }) {
         </div>
 
         <SummaryCards report={report} />
-        <FiltersPanel report={report} />
         {report.analytics && (
           <Suspense fallback={<ChartsFallback />}>
             <ChartsPanel report={report} />
           </Suspense>
         )}
+        <FiltersPanel report={report} />
         <ReportTable report={report} />
       </motion.div>
     </Layout>

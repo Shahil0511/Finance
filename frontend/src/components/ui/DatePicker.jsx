@@ -1,7 +1,9 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarDays, Loader2 } from 'lucide-react';
 import 'react-day-picker/style.css';
+import { useAnchoredPopover } from '../../hooks/useAnchoredPopover';
 import { cn } from '../../lib/cn';
 
 // react-day-picker (+date-fns) is ~100kB — load it on first open, not upfront.
@@ -18,30 +20,20 @@ const display = (s) =>
     ? new Date(`${s}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
     : 'Pick a date';
 
-/** Premium calendar field: token-themed react-day-picker inside a spring
-    popover, replacing the OS-default <input type="date">. Value in/out is a
-    YYYY-MM-DD string (same contract as the old input). */
+/** Premium calendar field: token-themed react-day-picker in a portal-rendered
+    spring popover (never clipped), replacing the OS <input type="date">.
+    Value in/out is a YYYY-MM-DD string. */
 export default function DatePicker({ value, onChange, id, disabled = false }) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
   const selected = fromStr(value);
 
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e) => {
-      if (!rootRef.current?.contains(e.target)) setOpen(false);
-    };
-    const onKey = (e) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
+  const { triggerRef, popRef, style, placement, onClose } = useAnchoredPopover(open, {
+    estHeight: 360,
+  });
+  onClose.current = () => setOpen(false);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={triggerRef}>
       <button
         type="button"
         id={id}
@@ -63,39 +55,47 @@ export default function DatePicker({ value, onChange, id, disabled = false }) {
         </span>
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            role="dialog"
-            aria-label="Choose date"
-            initial={{ opacity: 0, y: -6, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 480, damping: 32, mass: 0.6 }}
-            className="absolute left-0 top-full z-50 mt-1.5 origin-top rounded-xl border border-border bg-card p-3 shadow-pop"
-          >
-            <Suspense
-              fallback={
-                <div className="grid h-[316px] w-[266px] place-items-center">
-                  <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden="true" />
-                </div>
-              }
+      {createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={popRef}
+              style={style}
+              role="dialog"
+              aria-label="Choose date"
+              initial={{ opacity: 0, y: placement === 'top' ? 6 : -6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: placement === 'top' ? 6 : -6, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 480, damping: 32, mass: 0.6 }}
+              className={cn(
+                'rounded-xl border border-border bg-card p-3 shadow-pop',
+                placement === 'top' ? 'origin-bottom' : 'origin-top',
+              )}
             >
-              <DayPicker
-                mode="single"
-                selected={selected}
-                defaultMonth={selected}
-                onSelect={(day) => {
-                  if (day) onChange(toStr(day));
-                  setOpen(false);
-                }}
-                showOutsideDays
-                weekStartsOn={1}
-              />
-            </Suspense>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <Suspense
+                fallback={
+                  <div className="grid h-[316px] w-[266px] place-items-center">
+                    <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden="true" />
+                  </div>
+                }
+              >
+                <DayPicker
+                  mode="single"
+                  selected={selected}
+                  defaultMonth={selected}
+                  onSelect={(day) => {
+                    if (day) onChange(toStr(day));
+                    setOpen(false);
+                  }}
+                  showOutsideDays
+                  weekStartsOn={1}
+                />
+              </Suspense>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   );
 }

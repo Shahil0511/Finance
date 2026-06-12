@@ -25,7 +25,7 @@ const GLOWS = {
 export default function StatCard({ label, value, icon: Icon, tone = 'primary', loading = false, index = 0 }) {
   return (
     <motion.div
-      className="group relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft transition-shadow hover:shadow-pop sm:p-5"
+      className="group relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft transition-all duration-300 hover:border-primary/25 hover:shadow-pop sm:p-5"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.35, ease: 'easeOut' }}
@@ -55,9 +55,9 @@ export default function StatCard({ label, value, icon: Icon, tone = 'primary', l
       </div>
 
       {loading ? (
-        <Skeleton className="relative mt-4 h-8 w-28" />
+        <Skeleton className="relative mt-4 h-9 w-32" />
       ) : (
-        <p className="relative mt-3 text-2xl font-bold tabular-nums tracking-tight text-card-foreground sm:text-[28px]">
+        <p className="relative mt-3 text-[26px] font-extrabold tabular-nums tracking-tight text-card-foreground sm:text-3xl">
           {value}
         </p>
       )}

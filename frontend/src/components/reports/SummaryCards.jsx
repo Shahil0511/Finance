@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
 import StatCard from '../ui/StatCard';
 import ErrorCard from '../ui/ErrorCard';
-import { cleanParams } from '../../store/useFilterStore';
+import { cleanAggParams } from '../../store/useFilterStore';
 import { cn } from '../../lib/cn';
 
 /** Config-driven KPI strip — one component for every report. */
 export default function SummaryCards({ report }) {
   const { filters } = report.store();
   const { useSummary } = report.api;
-  const { data, isLoading, isFetching, isError, error, refetch } = useSummary(cleanParams(filters));
+  const { data, isLoading, isFetching, isError, error, refetch } = useSummary(cleanAggParams(filters));
 
   if (isError) {
     return (

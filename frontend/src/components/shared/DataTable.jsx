@@ -52,7 +52,7 @@ export default function DataTable({
 
   return (
     <motion.div
-      className="relative overflow-hidden rounded-xl border border-border bg-card shadow-soft"
+      className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}

@@ -8,7 +8,7 @@ const BASE =
   'disabled:opacity-50 disabled:pointer-events-none';
 
 const VARIANTS = {
-  primary:     'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
+  primary:     'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-md shadow-blue-600/25 hover:from-blue-500 hover:to-indigo-600 hover:shadow-lg hover:shadow-blue-600/30',
   secondary:   'bg-accent text-accent-foreground hover:bg-accent/70',
   outline:     'border border-border bg-card text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground',
   ghost:       'text-muted-foreground hover:bg-accent hover:text-accent-foreground',

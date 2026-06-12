@@ -115,8 +115,8 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* Soft elevation used by cards/popovers — gentler than the default scale. */
-  --shadow-soft: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
-  --shadow-pop:  0 4px 8px -2px rgb(15 23 42 / 0.10), 0 16px 40px -8px rgb(15 23 42 / 0.18);
+  --shadow-soft: 0 1px 2px 0 rgb(15 23 42 / 0.05), 0 8px 24px -8px rgb(15 23 42 / 0.10);
+  --shadow-pop:  0 4px 10px -2px rgb(15 23 42 / 0.10), 0 20px 48px -12px rgb(15 23 42 / 0.22);
 }
 
 /* ── Base styles ──────────────────────────────────────────────────────────── */
@@ -129,12 +129,11 @@
   body {
     @apply bg-background text-foreground antialiased;
     text-rendering: optimizeLegibility;
-    /* Subtle premium tint falling from the top of the page. */
-    background-image: linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--primary) 5%, transparent),
-      transparent 360px
-    );
+    /* Soft mesh-gradient accents — the modern dashboard backdrop. */
+    background-image:
+      radial-gradient(640px 320px at 85% -60px, color-mix(in oklab, var(--primary) 8%, transparent), transparent 70%),
+      radial-gradient(540px 300px at -120px 30%, color-mix(in oklab, #8b5cf6 6%, transparent), transparent 70%),
+      linear-gradient(to bottom, color-mix(in oklab, var(--primary) 4%, transparent), transparent 340px);
     background-repeat: no-repeat;
   }
 

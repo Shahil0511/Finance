@@ -37,12 +37,12 @@ export default function FiltersPanel({ report }) {
   };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-card shadow-soft" aria-label="Filters">
+    <section className="rounded-2xl border border-border bg-card shadow-soft" aria-label="Filters">
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-controls={bodyId}
-        className="flex min-h-12 w-full items-center justify-between px-4 py-3 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5"
+        className="flex min-h-12 w-full items-center justify-between rounded-t-2xl px-4 py-3 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-5"
       >
         <span className="flex items-center gap-2.5">
           <Filter className="size-4 text-muted-foreground" aria-hidden="true" />
@@ -101,7 +101,7 @@ export default function FiltersPanel({ report }) {
               />
             </div>
 
-            <div className="flex flex-col-reverse gap-2 border-t border-border bg-muted/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="flex flex-col-reverse gap-2 rounded-b-2xl border-t border-border bg-muted/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               {activeCount > 0 ? (
                 <Button variant="ghost" size="sm" onClick={clear} className="w-full sm:w-auto">
                   <X className="size-3.5" aria-hidden="true" /> Clear filters

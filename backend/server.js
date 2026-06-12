@@ -122,12 +122,28 @@ async function start() {
   app.use(
     `${basePath}`,
     express.static(frontendPath, {
-      maxAge: "1d", // static assets cached by browser
       etag: true,
+      setHeaders(res, filePath) {
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          // Vite content-hashes these filenames — safe to cache forever.
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else {
+          // index.html (and other unhashed files) must ALWAYS revalidate,
+          // otherwise browsers keep an old shell pointing at deleted assets
+          // and users see a stale or broken UI after every deploy.
+          res.setHeader("Cache-Control", "no-cache");
+        }
+      },
     }),
   );
-  app.get(`${basePath}/*`, (_req, res) => {
+  app.get(`${basePath}/*`, (req, res) => {
+    // A missing hashed asset means a stale shell — 404 it so the browser
+    // recovers on reload instead of receiving index.html as "JavaScript".
+    if (req.path.includes("/assets/")) {
+      return res.status(404).end();
+    }
     const indexPath = path.join(frontendPath, "index.html");
+    res.setHeader("Cache-Control", "no-cache");
     res.sendFile(indexPath, (err) => {
       if (err)
         res.status(404).json({

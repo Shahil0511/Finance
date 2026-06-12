@@ -64,3 +64,9 @@ export const useTataCliqReturnsFilterStore   = createFilterStore(tataCliqReturns
 
 export const cleanParams = (obj) =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v != null && v !== ''));
+
+/** Filter params WITHOUT pagination/sort — for summary & analytics queries.
+    Including page/sortBy made every table page-flip refetch the aggregates
+    and fragmented the server cache into one entry per page. */
+export const cleanAggParams = ({ page, pageSize, sortBy, sortDir, ...rest } = {}) =>
+  cleanParams(rest);
