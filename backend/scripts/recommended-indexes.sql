@@ -8,8 +8,9 @@
 --    Its sp1 CTE joins b2c_non_split (19M rows) on (channel_parent_order_id,
 --    client_sku_id), which has no index, forcing a hash join over a large scan.
 --    Expected effect: Tata Cliq returns list/summary/export drop to ~2-3s.
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_b2cns_parent_sku
-  ON public.b2c_non_split (channel_parent_order_id, client_sku_id);
+
+
+
 
 -- 2. OPTIONAL — shaves the OSD scan inside the sales reports. The window
 --    predicate already prunes sales_order_detail to ~9 weekly chunks, which
