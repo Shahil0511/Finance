@@ -47,21 +47,21 @@ if (!TEST_DATABASE_URL) {
     await db.end();
   });
 
-  test("summary: forward_order_value sums the counted population", async () => {
+  // ─── A1 FIXED (REFACTOR_PLAN.md) ──────────────────────────────────────────
+  // summary() now uses the same strict base CTE as the list (item_id NOT NULL,
+  // forward order >= 2026-01-01), so the headline reconciles with the rows.
+  // Only RA qualifies; RB (item_id NULL) and RC (2025 forward order) drop from both.
+  // (Assertions flipped from summary 3/600 to summary 1/100 when the fix landed.)
+  test("[A1 fixed] summary forward_order_value matches the strict population (100)", async () => {
     const [agg] = await returnsRepo.summary(RET);
-    assert.equal(Number(agg.forward_order_value), 600); // 100 + 200 + 300 (RA + RB + RC)
+    assert.equal(Number(agg.forward_order_value), 100); // RA only
   });
 
-  // ─── CHARACTERIZATION of bug A1 (REFACTOR_PLAN.md) ─────────────────────────
-  // The summary tiles and the detail list count DIFFERENT populations, so the
-  // headline number cannot be reconciled against the rows the user can page.
-  // Current: summary = 3, list = 1. Phase 2 must reconcile these (the canonical
-  // population is a business decision); this test then asserts they agree.
-  test("[characterizes bug A1] summary counts 3 but the list shows only 1", async () => {
+  test("[A1 fixed] summary and list count the SAME population (1)", async () => {
     const [agg] = await returnsRepo.summary(RET);
     const rows = await returnsRepo.list(RET, SORT);
-    assert.equal(Number(agg.total_returns), 3); // RA, RB, RC
-    assert.equal(rows.length, 1); // only RA survives the stricter list filter
+    assert.equal(Number(agg.total_returns), 1); // reconciles with the list
+    assert.equal(rows.length, 1);
     assert.equal(rows[0].return_order_item_id, "RA");
   });
 

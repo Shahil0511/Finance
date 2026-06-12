@@ -392,8 +392,8 @@ async function summary(params, signal) {
     SELECT
       COUNT(DISTINCT channel_parent_order_id)                             AS total_orders,
       COALESCE(SUM(dispatched_quantity), 0)                              AS total_dispatched,
-      COALESCE(SUM(unit_sale_price), 0)                                  AS total_sale_value,
-      COALESCE(SUM(unit_tax), 0)                                         AS total_tax,
+      COALESCE(SUM(unit_sale_price::numeric * dispatched_quantity), 0)    AS total_sale_value,
+      COALESCE(SUM(unit_tax::numeric * dispatched_quantity), 0)           AS total_tax,
       SUM(CASE WHEN sla_breached::text IN ('1','true','t','Y','yes','YES')
           THEN 1 ELSE 0 END)                                              AS sla_breached_count
     FROM base
@@ -485,8 +485,8 @@ async function tataCliqSummary(params, signal) {
     SELECT
       COUNT(*) AS total_orders,
       COALESCE(SUM(dispatched_quantity), 0) AS total_dispatched,
-      COALESCE(SUM(unit_sale_price), 0) AS total_sale_value,
-      COALESCE(SUM(unit_tax), 0) AS total_tax,
+      COALESCE(SUM(unit_sale_price::numeric * dispatched_quantity), 0) AS total_sale_value,
+      COALESCE(SUM(unit_tax::numeric * dispatched_quantity), 0) AS total_tax,
       SUM(CASE WHEN sla_breached::text IN ('1','true','t','Y','yes','YES')
           THEN 1 ELSE 0 END) AS sla_breached_count
     FROM (${TATA_CLIQ_QUERY}) t1

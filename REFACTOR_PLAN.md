@@ -32,9 +32,9 @@ A reporting tool that miscounts money is worse than one that's down.
 
 | # | Sev | Issue | Location |
 |---|-----|-------|----------|
-| A1 | **High** | **Returns list and summary count different populations.** Summary uses `RETURN_BASE_CTE` (previous-month grace `EXTRACT(DAY…)<=2`); list uses `RETURN_DETAIL_BASE_CTE` (no grace, different inclusion predicate + dedup key). On the 1st–2nd of a month the summary tiles include last month but the detail rows don't → **headline numbers won't reconcile with the table.** | `returnsRepository.js:27-35` vs `62-81` |
+| A1 | ✅ Fixed | **Returns list and summary counted different populations** → headline didn't reconcile with the table. **FIXED 2026-06-12** — `summary()` now reuses the list's strict `RETURN_DETAIL_BASE_CTE` (owner chose "summary matches list"); dead `RETURN_BASE_CTE` removed. Guarded by `returns.integration.test.js`. | `returnsRepository.js:summary()` |
 | A2 | ✅ Fixed | **Myntra-Omni returns over-count & duplicate.** The omni `b2c` CTE lacked `DISTINCT ON`, so the `LEFT JOIN` fanned out duplicate rows → inflated `COUNT(*)` and `SUM(forward_order_value)`. **FIXED 2026-06-12** — added `DISTINCT ON (channel_order_id, client_sku_id_ean)` (mirroring the regular query); guarded by `returns.integration.test.js`. | `returnsRepository.js:608` |
-| A3 | **High** | **Sales revenue likely undercounts.** `total_sale_value` sums `unit_sale_price` with no `× dispatched_quantity`; same for `total_tax`. Any line with qty > 1 is wrong. (Confirm column semantics first.) | `salesRepository.js:395-396` |
+| A3 | ✅ Fixed | **Sales revenue undercounted** — `total_sale_value`/`total_tax` summed per-unit price with no `× dispatched_quantity`. **FIXED 2026-06-12** — both generic + TataCliq summaries now `SUM(unit_sale_price::numeric * dispatched_quantity)` (owner chose × qty; `::numeric` also covers A6). Guarded by `sales.integration.test.js`. | `salesRepository.js:395, 488` |
 | A4 | Medium | **Valid-looking sort → HTTP 500.** One shared `ALLOWED_SORT_COLS` spans queries with different column sets, so e.g. `?sortBy=split_mrp` passes validation then throws `column does not exist`. | `salesRepository.js:5-47, 381-383` |
 | A5 | Medium | **Pagination `total`/`totalPages` are fake** — only ever report "current page (+1)" (`total = offset + data.length + (hasMore?1:0)`). Frontend Next button is gated on the fake `totalPages` and can block paging forward. | `pagination.js:29,37`; `shared/DataTable.jsx:168-172` |
 | A6 | Medium | Float money risk: returns cast `SUM(x::numeric)`, sales don't. If columns are `double precision`, sales sums accumulate float error. | `salesRepository.js:395` vs `returnsRepository.js:1009` |
@@ -128,9 +128,9 @@ A reporting tool that miscounts money is worse than one that's down.
 - [x] Untracked the committed SPA bundle: added `backend/public/` to `.gitignore` and ran `git rm --cached -r backend/public` (deploy is always Docker / fresh build — confirmed 2026-06-12). 4000-vs-5555 port left as-is but documented in the README.
 
 ### Phase 2 — Correctness & security fixes (behavior changes — guarded by Phase 0 tests)
-- [ ] **A1:** unify the returns list/summary base CTEs (same population + date window).
+- [x] **A1:** returns `summary()` now reuses the list's strict `RETURN_DETAIL_BASE_CTE` (owner chose "summary matches list"; 2026-06-12) — headline reconciles with the rows. Verified by integration tests.
 - [x] **A2:** added `DISTINCT ON (channel_order_id, client_sku_id_ean)` to the omni b2c CTE (2026-06-12) — omni summary/list no longer double-count via b2c fan-out. Verified by integration tests.
-- [ ] **A3:** fix sales revenue to `× dispatched_quantity` (after confirming column semantics); **A6:** add `::numeric` casts to sales sums.
+- [x] **A3 + A6:** sales `total_sale_value`/`total_tax` now `SUM(unit_sale_price::numeric * dispatched_quantity)` in both generic + TataCliq summaries (owner chose × qty; 2026-06-12). Verified by integration tests.
 - [ ] **A4:** per-query sort allow-lists + a **repo-internal** `sortBy ∈ allowed` / `sortDir ∈ {ASC,DESC}` guard.
 - [ ] **B2/B3:** stream + bound CSV exports; prefix `= + - @` values with `'`.
 - [ ] **B4:** stop returning raw error `detail` in non-dev. **B5:** set `trust proxy`; reconsider `passOnStoreError`. **B6:** default CORS to an allowlist. (**B1** dropped — auth is handled upstream by design.)

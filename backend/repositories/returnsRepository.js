@@ -24,40 +24,8 @@ const ALLOWED_SORT_COLS = new Set([
   "channel_sub_order_id_count",
 ]);
 
-const RETURN_BASE_CTE = `
-  WITH date_params AS (
-    SELECT
-      (CURRENT_DATE + INTERVAL '1 day')::date AS last_date,
-      CASE
-        WHEN EXTRACT(DAY FROM CURRENT_DATE) <= 2
-        THEN DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')::date
-        ELSE DATE_TRUNC('month', CURRENT_DATE)::date
-      END AS min_date
-  ),
-  returns_base AS (
-    SELECT
-      rt_base.*,
-      ROW_NUMBER() OVER (
-        PARTITION BY COALESCE(
-          rt_base.return_order_item_id::text,
-          rt_base.channel_return_item_id::text,
-          rt_base.channel_order_id::text || ':' || rt_base.client_sku_id_ean::text
-        )
-        ORDER BY rt_base.return_order_processed_time DESC NULLS LAST
-      ) AS rw
-    FROM return_order_report_item_level_wms AS rt_base
-    CROSS JOIN date_params
-    WHERE (
-        rt_base.sales_channel = 'myntra-omni'
-        OR (
-          rt_base.sales_channel IS DISTINCT FROM 'myntra-omni'
-          AND rt_base.item_id IS NOT NULL
-        )
-      )
-      AND rt_base.return_order_processed_time >= GREATEST($1::date, date_params.min_date)
-      AND rt_base.return_order_processed_time <  LEAST($2::date, date_params.last_date)
-  )
-`;
+// RETURN_BASE_CTE removed 2026-06-12 (A1 fix): summary now reuses
+// RETURN_DETAIL_BASE_CTE so it counts the same strict population as the list.
 
 const RETURN_DETAIL_BASE_CTE = `
   WITH date_params AS (
@@ -1004,7 +972,7 @@ async function list(params, { sortBy, sortDir, pageLimit, offset, signal }) {
 
 async function summary(params, signal) {
   const sql = `
-    ${RETURN_BASE_CTE}
+    ${RETURN_DETAIL_BASE_CTE}
     SELECT
       COUNT(*)                                                                    AS total_returns,
       COALESCE(SUM(forward_order_value::numeric), 0)                              AS forward_order_value

@@ -53,17 +53,16 @@ if (!TEST_DATABASE_URL) {
     const [agg] = await salesRepo.summary(MYNTRA);
     assert.equal(Number(agg.total_orders), 2); // distinct parents P1, P2
     assert.equal(Number(agg.total_dispatched), 6); // 3 + 1 + 2
-    assert.equal(Number(agg.total_tax), 63); // 18 + 36 + 9
+    assert.equal(Number(agg.total_tax), 108); // (18*3)+(36*1)+(9*2) — now × dispatched_quantity
     assert.equal(Number(agg.sla_breached_count), 0);
   });
 
-  // ─── CHARACTERIZATION of bug A3 (REFACTOR_PLAN.md) ─────────────────────────
-  // total_sale_value sums unit_sale_price WITHOUT multiplying by quantity.
-  // Correct revenue = 100*3 + 200*1 + 50*2 = 600. Current (buggy) value = 350.
-  // When Phase 2 fixes A3 this assertion flips to 600 and is updated on purpose.
-  test("[characterizes bug A3] revenue ignores quantity (350, should be 600)", async () => {
+  // ─── A3 FIXED (REFACTOR_PLAN.md) ──────────────────────────────────────────
+  // total_sale_value now sums unit_sale_price × dispatched_quantity.
+  // 100*3 + 200*1 + 50*2 = 600. (Assertion flipped from the buggy 350 when fixed.)
+  test("[A3 fixed] revenue = Σ price × quantity (600)", async () => {
     const [agg] = await salesRepo.summary(MYNTRA);
-    assert.equal(Number(agg.total_sale_value), 350); // BUG: Σ price, not Σ price × qty
+    assert.equal(Number(agg.total_sale_value), 600);
   });
 
   test("list: only in-window rows; the 2-months-old row is excluded", async () => {
