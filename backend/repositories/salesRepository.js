@@ -574,7 +574,7 @@ async function tataCliqExportStream(params, signal) {
 
 async function dataStatus(signal) {
   const sql = `
-    SELECT MAX(handover_time) AS last_data_at
+    SELECT MAX(channel_invoice_time) AS last_data_at
     FROM b2c_detail
     WHERE channel_invoice_time >= CURRENT_DATE - INTERVAL '90 days'
   `;
