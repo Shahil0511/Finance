@@ -33,6 +33,11 @@ export const returnsApi = createApi({
       providesTags: ['Returns'], // Refresh re-pulls dropdown options too
       keepUnusedDataFor: 300,
     }),
+    getReturnsDataStatus: b.query({
+      query: () => '/data-status',
+      providesTags: ['Returns'],
+      keepUnusedDataFor: 60,
+    }),
     getReturnsAnalytics: b.query({
       query: (params) => ({ url: '/analytics', params }),
       providesTags: ['Returns'],
@@ -75,6 +80,7 @@ export const {
   useGetReturnsListQuery,
   useGetReturnsSummaryQuery,
   useGetReturnsFiltersQuery,
+  useGetReturnsDataStatusQuery,
   useGetReturnsAnalyticsQuery,
   useGetMyntraOmniReturnsListQuery,
   useGetMyntraOmniReturnsSummaryQuery,

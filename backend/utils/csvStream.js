@@ -5,7 +5,7 @@ const { csvHeader, csvRow } = require("./csv");
 
 /**
  * Streams query rows to the response as a CSV download instead of buffering
- * the whole result set in memory (REFACTOR_PLAN.md B2).
+ * the whole result set in memory.
  *
  * The first row is pulled BEFORE any header is written, so a query error
  * (bad SQL, connection failure) still propagates to the JSON error handler

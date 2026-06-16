@@ -20,6 +20,15 @@ const cacheKey = (name) => (req) =>
   `${name}:${hashParams(req.validatedQuery || req.query)}`;
 
 router.get(
+  "/data-status",
+  cacheMiddleware({
+    keyFn: () => "returns_data_status",
+    ttl: 60,
+  }),
+  asyncHandler(returnsController.dataStatus),
+);
+
+router.get(
   "/analytics",
   validateReturnsQuery,
   cacheMiddleware({

@@ -112,4 +112,8 @@ async function createRateLimiter({
   });
 }
 
-module.exports = { createRateLimiter, RedisRateLimitStore };
+// RedisRateLimitStore is intentionally NOT exported: it is an internal detail
+// instantiated only by buildRedisStore() above. Nothing outside this module
+// references it (verified repo-wide), so keeping it private tightens the
+// surface a reader has to reason about.
+module.exports = { createRateLimiter };

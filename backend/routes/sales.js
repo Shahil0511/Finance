@@ -84,6 +84,15 @@ router.get(
 );
 
 router.get(
+  "/data-status",
+  cacheMiddleware({
+    keyFn: () => "sales_data_status",
+    ttl: 60,
+  }),
+  asyncHandler(salesController.dataStatus),
+);
+
+router.get(
   "/analytics",
   validateSalesQuery,
   cacheMiddleware({

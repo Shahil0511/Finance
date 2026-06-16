@@ -73,7 +73,7 @@ async function getFilters(signal) {
   return withExecutionTime(startedAt, data);
 }
 
-/* Shapes the GROUPING SETS result into chart buckets (see repository). */
+/* Shapes the GROUPING SETS result into chart buckets. */
 async function getAnalytics(query, signal) {
   const startedAt = Date.now();
   const rows = await returnsRepository.analytics(buildParams(query), signal);
@@ -98,7 +98,7 @@ async function getAnalytics(query, signal) {
   });
 }
 
-// Row streams (REFACTOR_PLAN.md B2) — controllers pipe these to the response
+// Row streams — controllers pipe these to the response
 // as CSV instead of buffering whole exports in memory.
 function exportStream(query, signal) {
   return returnsRepository.exportStream(buildParams(query), signal);
@@ -168,13 +168,16 @@ function exportTataCliqStream(query, signal) {
   return returnsRepository.tataCliqExportStream(buildTataCliqParams(query), signal);
 }
 
+async function getDataStatus(signal) {
+  const rows = await returnsRepository.dataStatus(signal);
+  return { lastDataAt: rows[0]?.last_data_at ?? null };
+}
+
 module.exports = {
   allowedSortCols: returnsRepository.ALLOWED_SORT_COLS,
   exportCols: returnsRepository.EXPORT_COLS,
   tataCliqExportCols: returnsRepository.TATA_CLIQ_EXPORT_COLS,
-  buildParams,
-  buildOmniParams,
-  buildTataCliqParams,
+  getDataStatus,
   getList,
   getSummary,
   getAnalytics,

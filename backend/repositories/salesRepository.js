@@ -572,10 +572,20 @@ async function tataCliqExportStream(params, signal) {
   return db.queryStream(sql, params, signal);
 }
 
+async function dataStatus(signal) {
+  const sql = `
+    SELECT MAX(handover_time) AS last_data_at
+    FROM b2c_detail
+    WHERE channel_invoice_time >= CURRENT_DATE - INTERVAL '90 days'
+  `;
+  return db.query(sql, [], signal);
+}
+
 module.exports = {
   ALLOWED_SORT_COLS,
   EXPORT_COLS,
   TATA_CLIQ_EXPORT_COLS,
+  dataStatus,
   list,
   summary,
   analytics,

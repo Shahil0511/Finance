@@ -33,6 +33,11 @@ export const salesApi = createApi({
       providesTags: ['Sales'], // Refresh re-pulls dropdown options too
       keepUnusedDataFor: 300,
     }),
+    getSalesDataStatus: b.query({
+      query: () => '/data-status',
+      providesTags: ['Sales'],
+      keepUnusedDataFor: 60,
+    }),
     getSalesAnalytics: b.query({
       query: (params) => ({ url: '/analytics', params }),
       providesTags: ['Sales'],
@@ -60,6 +65,7 @@ export const {
   useGetSalesListQuery,
   useGetSalesSummaryQuery,
   useGetSalesFiltersQuery,
+  useGetSalesDataStatusQuery,
   useGetSalesAnalyticsQuery,
   useGetTataCliqSalesListQuery,
   useGetTataCliqSalesSummaryQuery,

@@ -132,7 +132,6 @@ async function queryStream(sql, params = [], signal) {
   return stream;
 }
 
-/** Call at the top of every route handler. Returns { signal } and wires abort on client disconnect. */
 function makeRequestSignal(req) {
   const ac = new AbortController();
   req.on('close', () => ac.abort());

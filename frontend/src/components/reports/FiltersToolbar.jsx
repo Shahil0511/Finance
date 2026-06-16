@@ -6,16 +6,10 @@ import ErrorCard from '../ui/ErrorCard';
 import { Skeleton } from '../ui/Skeleton';
 import { FilterDate, FilterSearch, FilterSelect } from '../ui/FilterControls';
 
-/** Compact enterprise filter toolbar — one dense row that wraps. Edits stay
-    local in a draft until "Apply" commits them to the store.               */
-export default function FiltersPanel({ report }) {
-  const { filters: applied, setFilters, reset } = report.store();
-  const { useFilters } = report.api;
-  const { data: opts, isLoading, isError, refetch } = useFilters();
-
+export default function FiltersToolbar({ fields, applied, setFilters, onClear, options, isLoading, isError, onRetry }) {
   const keys = useMemo(
-    () => ['dateFrom', 'dateTo', ...report.filters.selects.map((s) => s.key), 'search'],
-    [report],
+    () => ['dateFrom', 'dateTo', ...fields.selects.map((s) => s.key), 'search'],
+    [fields],
   );
   const snapshot = (source) => Object.fromEntries(keys.map((k) => [k, source[k] ?? '']));
 
@@ -28,37 +22,34 @@ export default function FiltersPanel({ report }) {
     .filter((k) => (applied[k] ?? '') !== '').length;
 
   const apply = () => setFilters({ ...draft });
-  const clear = () => {
-    reset();
-    setDraft(snapshot(report.store.getState().filters));
-  };
+  const clear = () => setDraft(snapshot(onClear()));
 
   return (
     <section className="rounded-lg border border-border bg-card shadow-soft" aria-label="Filters">
       {isError && (
         <div className="border-b border-border px-3 py-2.5 sm:px-4">
-          <ErrorCard compact message="Could not load filter options" onRetry={refetch} />
+          <ErrorCard compact message="Could not load filter options" onRetry={onRetry} />
         </div>
       )}
 
       <div className="flex flex-wrap items-end gap-2.5 px-3 py-3 sm:px-4">
-        <FilterDate label={report.filters.dateLabel} value={draft.dateFrom} onChange={patch('dateFrom')} className="w-full sm:w-36" />
+        <FilterDate label={fields.dateLabel} value={draft.dateFrom} onChange={patch('dateFrom')} className="w-full sm:w-36" />
         <FilterDate label="To" value={draft.dateTo} onChange={patch('dateTo')} className="w-full sm:w-36" />
 
         {isLoading
-          ? report.filters.selects.map((s) => (
+          ? fields.selects.map((s) => (
               <div key={s.key} className="flex w-full flex-col gap-1 sm:w-44">
                 <Skeleton className="h-3 w-14" />
                 <Skeleton className="h-10 w-full rounded-md sm:h-9" />
               </div>
             ))
-          : report.filters.selects.map((s) => (
+          : fields.selects.map((s) => (
               <FilterSelect
                 key={s.key}
                 label={s.label}
                 value={draft[s.key]}
                 onChange={patch(s.key)}
-                options={opts?.[s.optionsKey] ?? []}
+                options={options?.[s.optionsKey] ?? []}
                 className="w-full sm:w-44"
               />
             ))}
@@ -66,7 +57,7 @@ export default function FiltersPanel({ report }) {
         <FilterSearch
           value={draft.search}
           onChange={patch('search')}
-          placeholder={report.filters.searchPlaceholder}
+          placeholder={fields.searchPlaceholder}
           className="w-full sm:w-52"
         />
 

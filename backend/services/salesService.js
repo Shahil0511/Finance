@@ -70,7 +70,7 @@ async function getFilters(signal) {
 }
 
 /* Shapes the single GROUPING SETS result into chart-ready buckets.
-   gmask → which grouping set the row belongs to (see repository). */
+   gmask → which grouping set the row belongs to. */
 async function getAnalytics(query, signal) {
   const startedAt = Date.now();
   const rows = await salesRepository.analytics(buildParams(query), signal);
@@ -104,7 +104,7 @@ async function getAnalytics(query, signal) {
   });
 }
 
-// Returns a row stream (REFACTOR_PLAN.md B2) — the controller pipes it to the
+// Returns a row stream — the controller pipes it to the
 // response as CSV instead of buffering the whole export in memory.
 function exportStream(query, signal) {
   return salesRepository.exportStream(buildParams(query), signal);
@@ -140,12 +140,16 @@ function exportTataCliqStream(query, signal) {
   return salesRepository.tataCliqExportStream(buildTataCliqParams(query), signal);
 }
 
+async function getDataStatus(signal) {
+  const rows = await salesRepository.dataStatus(signal);
+  return { lastDataAt: rows[0]?.last_data_at ?? null };
+}
+
 module.exports = {
   allowedSortCols: salesRepository.ALLOWED_SORT_COLS,
   exportCols: salesRepository.EXPORT_COLS,
   tataCliqExportCols: salesRepository.TATA_CLIQ_EXPORT_COLS,
-  buildParams,
-  buildTataCliqParams,
+  getDataStatus,
   getList,
   getSummary,
   getAnalytics,

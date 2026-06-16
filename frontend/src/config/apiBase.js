@@ -4,7 +4,7 @@ const configuredBase = import.meta.env.VITE_BASE_PATH || import.meta.env.BASE_UR
 const normalizedBase = trimSlashes(configuredBase);
 
 export const APP_BASE_PATH = normalizedBase ? `/${normalizedBase}` : "";
-export const API_BASE_PATH = `${APP_BASE_PATH}/api`;
+const API_BASE_PATH = `${APP_BASE_PATH}/api`;
 
 export function apiUrl(path = "") {
   const normalizedPath = trimSlashes(path);

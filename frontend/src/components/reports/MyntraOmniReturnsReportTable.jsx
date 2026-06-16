@@ -1,19 +1,18 @@
 import { Download } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import Button from '../ui/Button';
+import { MYNTRA_OMNI_RETURN_REPORT } from '../../config/reports';
+import { useGetMyntraOmniReturnsListQuery } from '../../features/returns/returnsApi';
+import { cleanParams, useMyntraOmniReturnsFilterStore } from '../../store/useFilterStore';
 import { useCsvExport } from '../../hooks/useCsvExport';
-import { cleanParams } from '../../store/useFilterStore';
 
-/** Config-driven table glue — binds a report's store + list query + exports
-    to the presentational DataTable. One component for every report.        */
-export default function ReportTable({ report }) {
-  const { filters, setPage, setSort } = report.store();
-  const { useList } = report.api;
+export default function MyntraOmniReturnsReportTable() {
+  const { filters, setPage, setSort, setFilters } = useMyntraOmniReturnsFilterStore();
   const params = cleanParams(filters);
-  const { data: res, isLoading, isFetching, isError, error, refetch } = useList(params);
+  const { data: res, isLoading, isFetching, isError, error, refetch } = useGetMyntraOmniReturnsListQuery(params);
   const { exportCsv, exporting } = useCsvExport();
 
-  const actions = report.exports.map((exp) => (
+  const actions = MYNTRA_OMNI_RETURN_REPORT.exports.map((exp) => (
     <Button
       key={exp.endpoint}
       variant="outline"
@@ -29,15 +28,15 @@ export default function ReportTable({ report }) {
 
   return (
     <DataTable
-      title={report.tableTitle}
-      columns={report.columns}
+      title={MYNTRA_OMNI_RETURN_REPORT.tableTitle}
+      columns={MYNTRA_OMNI_RETURN_REPORT.columns}
       data={res?.data ?? []}
       pagination={res?.pagination ?? {}}
       sortBy={filters.sortBy}
       sortDir={filters.sortDir}
       onSort={setSort}
       onPage={setPage}
-      onPageSize={(pageSize) => report.store.getState().setFilters({ pageSize })}
+      onPageSize={(pageSize) => setFilters({ pageSize })}
       actions={actions}
       isLoading={isLoading}
       isFetching={isFetching}
@@ -45,7 +44,7 @@ export default function ReportTable({ report }) {
       error={error}
       onRetry={refetch}
       executionTimeMs={res?.executionTimeMs}
-      rowKey={report.rowKey}
+      rowKey={MYNTRA_OMNI_RETURN_REPORT.rowKey}
     />
   );
 }

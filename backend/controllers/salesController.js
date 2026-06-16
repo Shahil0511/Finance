@@ -63,8 +63,15 @@ async function tataCliqExportReport(req, res) {
   await streamCsvExport(res, stream, salesService.tataCliqExportCols, datedFilename("tata_cliq_sales"));
 }
 
+async function dataStatus(req, res) {
+  res.locals.dbQueries = 1;
+  const result = await salesService.getDataStatus(req.requestSignal);
+  res.json(result);
+}
+
 module.exports = {
   list,
+  dataStatus,
   summary,
   filters,
   analytics,

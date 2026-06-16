@@ -70,8 +70,6 @@ function cacheMiddleware({ keyFn, ttl = 120 }) {
       }
     }
 
-    res.locals.__cacheKey = key;
-    res.locals.__cacheTtl = safeTtl;
     res.locals.dataSource = "db";
     res.locals.redisStatus = redis.available()
       ? (forceRefresh ? "refresh" : "miss")

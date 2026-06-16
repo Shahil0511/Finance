@@ -1106,10 +1106,20 @@ async function tataCliqExportStream(params, signal) {
   return db.queryStream(sql, params, signal);
 }
 
+async function dataStatus(signal) {
+  const sql = `
+    SELECT MAX(return_order_processed_time) AS last_data_at
+    FROM return_order_report_item_level_wms
+    WHERE return_order_processed_time >= CURRENT_DATE - INTERVAL '120 days'
+  `;
+  return db.query(sql, [], signal);
+}
+
 module.exports = {
   ALLOWED_SORT_COLS,
   EXPORT_COLS,
   TATA_CLIQ_EXPORT_COLS,
+  dataStatus,
   list,
   summary,
   analytics,
